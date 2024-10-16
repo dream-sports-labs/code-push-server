@@ -1,0 +1,66 @@
+name: Upload Concrete Artifacts
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+jobs:
+  prepare-artifact-matrix:
+    name: Prepare Artifact Matrix
+    if: ${{ github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'publish') }}
+    runs-on: [self-hosted, linux, X64, code-push-server]
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        node-version: [20.12.2]
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.COMMIT_ACCESS_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+          cache: 'maven'
+          overwrite-settings: false
+
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.8.1
+
+      - name: Set up NVM
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+          nvm -v
+          nvm install 16.13.2
+          nvm use 16.13.2
+          node -v # Verify Node.js version
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.13.2'
+
+      - name: Set Consul and Vault token
+        shell: bash
+        run: |
+          echo "CONSUL_TOKEN=${{ secrets.CONSUL_TOKEN }}" >> $GITHUB_ENV
+          echo "VAULT_TOKEN=${{ secrets.VAULT_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Upload concrete artifacts
+        uses: dream11/d11-github-actions/upload-artifacts@v1.4.8
+        with:
+          github_token: ${{ secrets.COMMIT_ACCESS_TOKEN }}
+          jfrog_username: ${{ secrets.JFROG_USERNAME }}
+          jfrog_password: ${{ secrets.JFROG_PASSWORD }}
