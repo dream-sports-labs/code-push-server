@@ -3,7 +3,7 @@
 
 import * as api from "./api";
 import { S3 } from "aws-sdk"; // Amazon S3
-import { SecretsManager } from "aws-sdk";
+import { secretManager } from "aws-sdk";
 import * as awsRDS from "aws-sdk/clients/rds";
 import { AzureStorage } from "./storage/azure-storage";
 import { fileUploadMiddleware } from "./file-upload-manager";
@@ -48,24 +48,40 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
   let isSecretsManagerConfigured: boolean;
   let secretValue: any;
 
+  let storageProvider = process.env.STORAGE_PROVIDER || 'json'; // default to 'json' storage
+
+
   q<void>(null)
     .then(async () => {
-      if (true) {
-        storage = new JsonStorage();
-      } else {
-        // Fetch secrets from AWS Secrets Manager
+    switch (storageProvider) {
+      case 'aws':
         try {
           const secretData = await secretsManager.getSecretValue({ SecretId: SECRETS_MANAGER_SECRET_ID }).promise();
           secretValue = JSON.parse(secretData.SecretString || "{}");
           isSecretsManagerConfigured = true;
+          // Set up AWS S3 storage
+          storage = new AwsS3Storage(secretValue);
         } catch (error) {
           console.error("Failed to fetch secrets from AWS Secrets Manager", error);
           throw error;
         }
+        break;
 
-        // Set up S3 storage using the secret (or fallback to default S3 config)
-        //storage = s3; // Simple S3 instance for storage
+      case 'gcp':
+        try {
+          // Initialize GCP storage
+          storage = new GcpStorage();
+        } catch (error) {
+          console.error("Failed to initialize GCP storage", error);
+          throw error;
+        }
+        break;
+
+      case 'local':
+      default:
+        // Fallback to JsonStorage if no provider is specified
         storage = new JsonStorage();
+        break;
       }
     })
     .then(() => {
