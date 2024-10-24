@@ -11,11 +11,11 @@ const {
     createAccessKey,
     createModels,
     MODELS,
-} = require('./path_to_your_aws_storage_class'); // Replace with the actual path
+} = require('./bin/script/storage/aws-storage'); // Replace with the actual path
 
 // Configure Sequelize connection
 const sequelize = new Sequelize('codepushdb', 'codepush', 'root', {
-    host: 'localhost',
+    host: 'db',
     dialect: 'mysql',
 });
 
@@ -60,7 +60,7 @@ const seedData = {
         },
     ],
     accessKeys: [
-        { id: 'id_5', name: 'accessKey1', accountId: 'id_0', expires: 1735689600000 },
+        { id: 'id_5', name: 'accessKey1', accountId: 'id_0',createdBy: 'admin', createdTime: new Date().getTime(), friendlyName: 'Default Access Key', expires: 1735689600000 }
     ],
 };
 
@@ -68,7 +68,7 @@ const seedData = {
 async function seedDatabase() {
     try {
         // Sync the models to create the tables in MySQL if they don't exist
-        await sequelize.sync({ force: true });  // force: true drops existing tables and recreates them
+        await sequelize.sync({ force: true, engine: 'InnoDB' });  // force: true drops existing tables and recreates them
 
         console.log('Tables created successfully!');
 
