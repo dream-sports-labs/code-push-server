@@ -29,15 +29,19 @@ services:
     build:
       context: .  # This tells Docker to look for the Dockerfile in the current 'api/' directory
     ports:
-      - "3000:3000"
+      - "3012:3012"
     depends_on:
       - db
       - redis
+      - localstack  # Ensure app waits for localstack to be ready
     environment:
       DB_HOST: db
       DB_NAME: codepushdb
       DB_USER: codepush
       DB_PASS: root
+      AWS_ACCESS_KEY_ID: test       # Dummy AWS credentials for Localstack
+      AWS_SECRET_ACCESS_KEY: test   # Dummy AWS credentials for Localstack
+      S3_ENDPOINT: http://localstack:4566  # Point to Localstack service inside
     volumes:
       - .:/code-push-server/api
     command: >
