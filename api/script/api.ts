@@ -29,10 +29,9 @@ export function management(config: ManagementConfig): Router {
 }
 
 export function auth(config: AuthenticationConfig): any {
-  const passportAuthentication = new PassportAuthentication(config);
   const autentication = new Authentication(config);
   return {
-    router: autentication.getRouter.bind(passportAuthentication),
+    router: autentication.getRouter.bind(autentication),
     authenticate: autentication.authenticate,
   };
 }
