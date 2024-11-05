@@ -1,21 +1,21 @@
 version: '3.8'
 services:
   db:
-    image: mysql:5.7
+    image: mysql/mysql-server:5.7
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: codepushdb
       MYSQL_USER: root
       MYSQL_PASSWORD: root
     ports:
-      - "3306:3306"  # MySQL running on localhost:3306
+      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
 
   redis:
     image: redis:alpine
     ports:
-      - "6379:6379"  # Redis running on localhost:6379
+      - "6379:6379"
 
   localstack:
     image: localstack/localstack
@@ -23,7 +23,29 @@ services:
       - SERVICES=s3
       - AWS_DEFAULT_REGION=us-east-1
     ports:
-      - "4566:4566"  # LocalStack running on localhost:4566
+      - "4566:4566"
+
+  app:
+    build:
+      context: .  # This tells Docker to look for the Dockerfile in the current 'api/' directory
+    ports:
+      - "3012:3012"
+    depends_on:
+      - db
+      - redis
+      - localstack  # Ensure app waits for localstack to be ready
+    environment:
+      DB_HOST: db
+      DB_NAME: codepushdb
+      DB_USER: codepush
+      DB_PASS: root
+      AWS_ACCESS_KEY_ID: test       # Dummy AWS credentials for Localstack
+      AWS_SECRET_ACCESS_KEY: test   # Dummy AWS credentials for Localstack
+      S3_ENDPOINT: http://localstack:4566  # Point to Localstack service inside
+    volumes:
+      - .:/code-push-server/api
+    command: >
+      sh -c "npm install && npm run start:env && node seedData.js"
 
 volumes:
   db_data:

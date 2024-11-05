@@ -223,7 +223,7 @@ export const MODELS = {
 const DB_NAME = "codepushdb"
 const DB_USER = "codepush"
 const DB_PASS = "root"
-const DB_HOST = "localhost"
+const DB_HOST = "db"
 
 export class S3Storage implements storage.Storage {
     private s3: S3;
@@ -232,10 +232,10 @@ export class S3Storage implements storage.Storage {
     private setupPromise: q.Promise<void>
     public constructor() {
         this.s3 = new S3({
-          endpoint: process.env.S3_ENDPOINT, // LocalStack S3 endpoint
+          endpoint: process.env.S3_ENDPOINT || 'http://localhost:4566', // LocalStack S3 endpoint
           s3ForcePathStyle: true,
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'test',
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'test',
         });
         shortid.characters("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-");
         this.sequelize = new Sequelize(process.env.DB_NAME || DB_NAME, process.env.DB_USER || DB_USER, process.env.DB_PASS || DB_PASS, {
