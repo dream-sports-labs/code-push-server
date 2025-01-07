@@ -1,0 +1,44 @@
+name: Upload Snapshot Artifacts
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+concurrency:
+  group: ${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  prepare-artifact-matrix:
+    name: Prepare Artifact Matrix
+    runs-on: [self-hosted, linux, X64, code-push-server]
+    outputs:
+      artifacts: ${{ steps.set-matrix.outputs.artifact_matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.COMMIT_ACCESS_TOKEN }}
+
+      - name: Install requirements
+        run: python3 -m pip install -r .dream11/.ci/scripts/requirements.txt --user
+
+      - name: Set Matrix
+        id: set-matrix
+        run: python3 .dream11/.ci/scripts/build_artifact_matrix.py ${{ github.event_name }}
+
+  upload-artifacts:
+    name: Upload Artifacts
+    needs: [prepare-artifact-matrix]
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        artifacts: ${{ fromJson(needs.prepare-artifact-matrix.outputs.artifacts) }}
+    uses: ./.github/workflows/release-snapshot-artifact.yaml
+    with:
+      artifact-name: ${{ matrix.artifacts.artifact_name }}
+      artifact-version: ${{ matrix.artifacts.artifact_version }}
+    secrets: inherit
