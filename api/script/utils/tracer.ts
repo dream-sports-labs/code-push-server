@@ -3,7 +3,7 @@ ddTrace.init({
       profiling: true,
       env: 'load',
       service: 'code-push-server',
-      version: '8.1.7'
+      version: '8.1.9'
     })
 export default ddTrace
 
