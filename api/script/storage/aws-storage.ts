@@ -304,15 +304,30 @@ export class S3Storage implements storage.Storage {
 
         // Ensure the database exists, then initialize Sequelize
         this.setupPromise = q(this.createDatabaseIfNotExists()).then(() => {
-          this.sequelize = new Sequelize(
-              process.env.DB_NAME || DB_NAME,
-              process.env.DB_USER,
-              process.env.DB_PASS || DB_PASS,
-              {
-                  host: process.env.DB_HOST || DB_HOST,
-                  dialect: 'mysql',
+          this.sequelize = new Sequelize({
+              database: process.env.DB_NAME || DB_NAME,
+              dialect: 'mysql',
+              replication: {
+                  write: {
+                      host: process.env.DB_HOST || DB_HOST,
+                      username: process.env.DB_USER || DB_USER,
+                      password: process.env.DB_PASS || DB_PASS
+                  },
+                  read: [
+                      {
+                          host: process.env.DB_HOST_READER,
+                          username: process.env.DB_USER || DB_USER,
+                          password: process.env.DB_PASS || DB_PASS
+                      }
+                  ]
+              },
+              pool: {
+                  max: 50,
+                  min: 5,
+                  acquire: 30000,
+                  idle: 10000
               }
-          );
+            });
           return this.setup();
       });   
     }
