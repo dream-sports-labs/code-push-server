@@ -1312,16 +1312,28 @@ export class S3Storage implements storage.Storage {
         return this.setupPromise
           .then(async () => {
             let deployment = await this.sequelize.models[MODELS.DEPLOYMENT].findOne({ where: { key: deploymentKey } });
+            if (!deployment?.dataValues) {
+              console.warn(`Deployment not found for key: ${deploymentKey}`);
+              return [];
+            }
             return deployment.dataValues;
           })
           .then((deployment: storage.Deployment) => {
             // Fetch all packages associated with the deploymentId, ordered by uploadTime
+            if (!deployment?.id) {
+              console.warn("Skipping package lookup due to missing deployment data.");
+              return [];
+            }
             return this.sequelize.models[MODELS.PACKAGE].findAll({
               where: { deploymentId: deployment.id },
               order: [['uploadTime', 'ASC']], // Sort by upload time to maintain historical order
             });
           })
           .then((packageRecords: any[]) => {
+            if (!Array.isArray(packageRecords) || packageRecords.length === 0) {
+              console.warn("No packages found for the given deployment.");
+              return [];
+            }
             // Map each package record to the storage.Package format
             return packageRecords.map((pkgRecord) => this.formatPackage(pkgRecord.dataValues));
           })
