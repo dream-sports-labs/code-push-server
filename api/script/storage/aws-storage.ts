@@ -324,8 +324,8 @@ export class S3Storage implements storage.Storage {
               pool: {
                   max: 50,
                   min: 5,
-                  acquire: 30000,
-                  idle: 10000
+                  acquire: 5000,
+                  idle: 1000
               }
             });
           return this.setup();
