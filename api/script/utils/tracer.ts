@@ -1,5 +1,5 @@
 import ddTrace from 'dd-trace'
-ddTrace.init() // initialized in a different file to avoid hoisting.
+ddTrace.init();
 export default ddTrace
 
 export const getTraceId = () => {

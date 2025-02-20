@@ -14,10 +14,8 @@ import * as storageTypes from "../storage/storage";
 import { UpdateCheckCacheResponse, UpdateCheckRequest, UpdateCheckResponse } from "../types/rest-definitions";
 import * as validationUtils from "../utils/validation";
 
-import * as q from "q";
 import * as queryString from "querystring";
 import * as URL from "url";
-import Promise = q.Promise;
 import { sendErrorToDatadog } from "../utils/tracer";
 
 const METRICS_BREAKING_VERSION = "1.5.2-beta";
@@ -88,7 +86,7 @@ function createResponseUsingStorage(
         body: updateObject,
       };
 
-      return q(cacheableResponse);
+      return Promise.resolve(cacheableResponse);
     });
   } else {
     if (!validationUtils.isValidKeyField(updateRequest.deploymentKey)) {
@@ -110,7 +108,7 @@ function createResponseUsingStorage(
       );
     }
 
-    return q<redis.CacheableResponse>(null);
+    return Promise.resolve(<redis.CacheableResponse>(null));
   }
 }
 
@@ -129,7 +127,6 @@ export function getHealthRouter(config: AcquisitionConfig): express.Router {
         res.status(200).send("Healthy");
       })
       .catch((error: Error) => errorUtils.sendUnknownError(res, error, next))
-      .done();
   });
 
   return router;
@@ -154,7 +151,7 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
         .catch((error: Error) => {
           // Store the redis error to be thrown after we send response.
           redisError = error;
-          return q<redis.CacheableResponse>(null);
+          return Promise.resolve(<redis.CacheableResponse>(null));
         })
         .then((cachedResponse: redis.CacheableResponse) => {
           fromCache = !!cachedResponse;
@@ -162,7 +159,7 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
         })
         .then((response: redis.CacheableResponse) => {
           if (!response) {
-            return q<void>(null);
+            return Promise.resolve(<void>(null));
           }
 
           let giveRolloutPackage: boolean = false;
@@ -199,7 +196,6 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
           }
         })
         .catch((error: storageTypes.StorageError) => errorUtils.restErrorHandler(res, error, next))
-        .done();
     };
   };
 
@@ -223,7 +219,7 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
     const sdkVersion: string = restHeaders.getSdkVersion(req);
     if (semver.valid(sdkVersion) && semver.gte(sdkVersion, METRICS_BREAKING_VERSION)) {
       // If previousDeploymentKey not provided, assume it is the same deployment key.
-      let redisUpdatePromise: q.Promise<void>;
+      let redisUpdatePromise: Promise<void>;
 
       if (req.body.label && req.body.status === redis.DEPLOYMENT_FAILED) {
         redisUpdatePromise = redisManager.incrementLabelStatusCount(deploymentKey, req.body.label, req.body.status);
@@ -245,7 +241,6 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
           }
         })
         .catch((error: any) => errorUtils.sendUnknownError(res, error, next))
-        .done();
     } else {
       if (!clientUniqueId) {
         return errorUtils.sendMalformedRequestError(
@@ -271,7 +266,6 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
           res.sendStatus(200);
         })
         .catch((error: any) => errorUtils.sendUnknownError(res, error, next))
-        .done();
     }
   };
 
@@ -289,7 +283,6 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
         res.sendStatus(200);
       })
       .catch((error: any) => errorUtils.sendUnknownError(res, error, next))
-      .done();
   };
 
   router.get("/updateCheck", updateCheck(false));
