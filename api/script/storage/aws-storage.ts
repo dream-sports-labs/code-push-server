@@ -388,7 +388,7 @@ export class S3Storage implements storage.Storage {
         .then(() => {
           const models = createModelss(this.sequelize);
           console.log("Models registered");
-          return this.sequelize.sync();
+          // return this.sequelize.sync();
         })
         .then(() => {
           console.log("Sequelize models synced");
@@ -511,7 +511,7 @@ export class S3Storage implements storage.Storage {
     
             // If tenant is not found or tenantName doesn't match, create a new tenant
             if (!tenant) {
-              console.log(`Specified tenant (ID: ${tenantId}, Name: ${tenantName}) does not exist. Creating a new tenant.`);
+              console.warn(`Specified tenant (ID: ${tenantId}, Name: ${tenantName}) does not exist. Creating a new tenant.`);
     
               const idTogenerate = shortid.generate();
               // Create a new tenant with the specified tenantName, owned by the accountId
@@ -1338,7 +1338,7 @@ export class S3Storage implements storage.Storage {
           .then(async () => {
             let deployment = await this.sequelize.models[MODELS.DEPLOYMENT].findOne({ where: { key: deploymentKey } });
             if (!deployment?.dataValues) {
-              console.log(`Deployment not found for key: ${deploymentKey}`);
+              console.warn(`Deployment not found for key: ${deploymentKey}`);
               return [];
             }
             return deployment.dataValues;
@@ -1346,7 +1346,7 @@ export class S3Storage implements storage.Storage {
           .then((deployment: storage.Deployment) => {
             // Fetch all packages associated with the deploymentId, ordered by uploadTime
             if (!deployment?.id) {
-              console.log("Skipping package lookup due to missing deployment data.");
+              console.warn("Skipping package lookup due to missing deployment data.");
               return [];
             }
             return this.sequelize.models[MODELS.PACKAGE].findAll({
@@ -1356,7 +1356,7 @@ export class S3Storage implements storage.Storage {
           })
           .then((packageRecords: any[]) => {
             if (!Array.isArray(packageRecords) || packageRecords.length === 0) {
-              console.log("No packages found for the given deployment.");
+              console.warn("No packages found for the given deployment.");
               return [];
             }
             // Map each package record to the storage.Package format
