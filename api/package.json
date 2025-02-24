@@ -11,8 +11,7 @@
     "restart": "npm run build && npm run start:env",
     "prettier": "prettier --write \"./**/*.ts\"",
     "lint": "npx eslint ./script/**/*.ts",
-    "lint:fix": "npx eslint ./script/**/*.ts --fix",
-    "test": "jest"
+    "lint:fix": "npx eslint ./script/**/*.ts --fix"
   },
   "repository": {
     "type": "git",
