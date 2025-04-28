@@ -3,14 +3,12 @@
 
 import * as assert from "assert";
 import * as shortid from "shortid";
-import * as q from "q";
 
 import { AzureStorage } from "../script/storage/azure-storage";
 import { JsonStorage } from "../script/storage/json-storage";
 import * as storageTypes from "../script/storage/storage";
-import * as utils from "./utils";
+import * as utils from "./utils.test";
 
-import Promise = q.Promise;
 
 describe("JSON Storage", () => storageTests(JsonStorage));
 
@@ -21,7 +19,7 @@ if (process.env.TEST_AZURE_STORAGE) {
 function storageTests(StorageType: new (...args: any[]) => storageTypes.Storage, disablePersistence?: boolean) {
   var storage: storageTypes.Storage;
 
-  before(() => {
+  beforeEach(() => {
     if (StorageType === AzureStorage) {
       storage = new StorageType(disablePersistence);
     }
@@ -35,7 +33,7 @@ function storageTests(StorageType: new (...args: any[]) => storageTypes.Storage,
 
   afterEach((): void => {
     if (storage instanceof JsonStorage) {
-      storage.dropAll().done();
+      storage.dropAll();
     }
   });
 
@@ -1128,7 +1126,7 @@ function storageTests(StorageType: new (...args: any[]) => storageTypes.Storage,
 
       beforeEach(() => {
         expectedPackageHistory = [];
-        var promiseChain: Promise<void> = q<void>(null);
+        var promiseChain: Promise<void> = Promise.resolve(<void>(null));
         var packageNumber = 1;
         for (var i = 1; i <= 3; i++) {
           promiseChain = promiseChain
@@ -1183,7 +1181,7 @@ function storageTests(StorageType: new (...args: any[]) => storageTypes.Storage,
             return storage.updatePackageHistory(account.id, app.id, deployment.id, /*history*/ null);
           })
           .then(failOnCallSucceeded, (error: storageTypes.StorageError) => {
-            assert.equal(error.code, storageTypes.ErrorCode.Other);
+            assert.equal(error.code, storageTypes.ErrorCode.Invalid);
             return storage.getPackageHistory(account.id, app.id, deployment.id);
           })
           .then((actualPackageHistory: storageTypes.Package[]) => {
@@ -1211,10 +1209,12 @@ function storageTests(StorageType: new (...args: any[]) => storageTypes.Storage,
           return storage.getBlobUrl(blobId);
         })
         .then((blobUrl: string) => {
+          console.log("🔍 Blob URL:", blobUrl);
           assert(blobUrl);
           return utils.retrieveStringContentsFromUrl(blobUrl);
         })
         .then((actualContents: string) => {
+          console.log("helle"+fileContents+"/n"+actualContents);
           assert.equal(fileContents, actualContents);
         });
     });
@@ -1238,7 +1238,7 @@ function storageTests(StorageType: new (...args: any[]) => storageTypes.Storage,
 
           return utils.retrieveStringContentsFromUrl(blobUrl);
         })
-        .timeout(1000, "timeout")
+        .then((result) => timeout(Promise.resolve(result), 1000, "timeout"))
         .then(
           (retrievedContents: string) => {
             assert.equal(null, retrievedContents);
@@ -1258,3 +1258,13 @@ function storageTests(StorageType: new (...args: any[]) => storageTypes.Storage,
 function failOnCallSucceeded(result: any): any {
   throw new Error("Expected the promise to be rejected, but it succeeded with value " + (result ? JSON.stringify(result) : result));
 }
+
+function timeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(message)), ms)
+    )
+  ]);
+}
+

@@ -3,12 +3,14 @@
 
 import * as express from "express";
 import * as defaultServer from "./default-server";
+import { sendErrorToDatadog } from "./utils/tracer";
 
 const https = require("https");
 const fs = require("fs");
 
 defaultServer.start(function (err: Error, app: express.Express) {
   if (err) {
+    sendErrorToDatadog(err);
     throw err;
   }
 
@@ -29,7 +31,7 @@ defaultServer.start(function (err: Error, app: express.Express) {
     });
   } else {
     server = app.listen(port, function () {
-      console.log("API host listening at http://localhost:" + port);
+      console.log(`API listening at http://localhost:${port}`);
     });
   }
 

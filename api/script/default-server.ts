@@ -23,7 +23,6 @@ import * as bodyParser from "body-parser";
 const domain = require("express-domain-middleware");
 import * as express from "express";
 const csrf = require('lusca').csrf;
-import * as q from "q";
 import { S3Storage } from "./storage/aws-storage";
 
 interface Secret {
@@ -49,7 +48,7 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
   let isSecretsManagerConfigured: boolean;
   let secretValue: any;
 
-  q<void>(null)
+  Promise.resolve(<void>(null))
     .then(async () => {
       if (!useJsonStorage) {
         //storage = new JsonStorage();
@@ -139,12 +138,10 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
       app.use(api.health({ storage: storage, redisManager: redisManager }));
 
       const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100, // limit each IP to 100 requests per windowMs
+        windowMs: 1000, // 1 minute
+        max: 2000, // limit each IP to 100 requests per windowMs
         validate: { xForwardedForHeader: false }
       });
-
-      app.use(limiter);
 
       if (process.env.DISABLE_ACQUISITION !== "true") {
         app.use(api.acquisition({ storage: storage, redisManager: redisManager }));
@@ -169,12 +166,11 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
         } else {
           app.use(auth.router());
         }
-        app.use(auth.authenticate, fileUploadMiddleware, api.management({ storage: storage, redisManager: redisManager }));
+        app.use(auth.authenticate, fileUploadMiddleware, limiter, api.management({ storage: storage, redisManager: redisManager }));
       } else {
         app.use(auth.router());
       }
 
       done(null, app, storage);
     })
-    .done();
 }

@@ -4,13 +4,11 @@
 import * as express from "express";
 import * as fs from "fs";
 import * as http from "http";
-import * as q from "q";
 import * as stream from "stream";
 
 import * as storage from "./storage";
 
 import clone = storage.clone;
-import Promise = q.Promise;
 import { isPrototypePollutionKey } from "./storage";
 
 function merge(original: any, updates: any): void {
@@ -18,6 +16,24 @@ function merge(original: any, updates: any): void {
     original[property] = updates[property];
   }
 }
+
+//function to mimic defer function in q package
+function defer<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: any) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: any) => void;
+};
 
 export class JsonStorage implements storage.Storage {
   public static NextIdNumber: number = 0;
@@ -57,7 +73,7 @@ export class JsonStorage implements storage.Storage {
     let pathName = __dirname + "/JsonStorage.json";
         
     fs.access(pathName, fs.constants.F_OK, (err) => {
-            console.log(err ? "File does not exist" : "File exists");
+            //console.log(err ? "File does not exist" : "File exists");
     });
     fs.exists(
       pathName,
@@ -121,7 +137,7 @@ export class JsonStorage implements storage.Storage {
   }
 
   public checkHealth(): Promise<void> {
-    return q.reject<void>("Should not be running JSON storage in production");
+    return Promise.reject<void>("Should not be running JSON storage in production");
   }
 
   public addAccount(account: storage.Account): Promise<string> {
@@ -140,7 +156,7 @@ export class JsonStorage implements storage.Storage {
     this.accounts[account.id] = account;
 
     this.saveStateAsync();
-    return q(account.id);
+    return Promise.resolve(account.id);
   }
 
   public getAccount(accountId: string): Promise<storage.Account> {
@@ -148,7 +164,7 @@ export class JsonStorage implements storage.Storage {
       return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
     }
 
-    return q(clone(this.accounts[accountId]));
+    return Promise.resolve(clone(this.accounts[accountId]));
   }
 
   public removeTenant(accountId: string, tenantId: string): Promise<void> {
@@ -165,7 +181,7 @@ export class JsonStorage implements storage.Storage {
     delete this.tenants[tenantId];
     this.saveStateAsync();
 
-    return q(<void>null);
+    return Promise.resolve(<void>null);
   }
 
   public getTenants(accountId: string): Promise<storage.Organization[]> {
@@ -174,7 +190,7 @@ export class JsonStorage implements storage.Storage {
       const tenants = tenantIds.map((id: string) => {
         return this.tenants[id];
       });
-      return q(clone(tenants));
+      return Promise.resolve(clone(tenants));
     }
 
     return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
@@ -183,7 +199,7 @@ export class JsonStorage implements storage.Storage {
   public getAccountByEmail(email: string): Promise<storage.Account> {
     for (const id in this.accounts) {
       if (this.accounts[id].email === email) {
-        return q(clone(this.accounts[id]));
+        return Promise.resolve(clone(this.accounts[id]));
       }
     }
 
@@ -208,7 +224,7 @@ export class JsonStorage implements storage.Storage {
       return JsonStorage.getRejectedPromise(storage.ErrorCode.Expired, "The access key has expired.");
     }
 
-    return q(this.accessKeyNameToAccountIdMap[accessKey].accountId);
+    return Promise.resolve(this.accessKeyNameToAccountIdMap[accessKey].accountId);
   }
 
   public addApp(accountId: string, app: storage.App): Promise<storage.App> {
@@ -240,7 +256,7 @@ export class JsonStorage implements storage.Storage {
 
     this.saveStateAsync();
 
-    return q(clone(app));
+    return Promise.resolve(clone(app));
   }
 
   public getApps(accountId: string): Promise<storage.App[]> {
@@ -254,7 +270,7 @@ export class JsonStorage implements storage.Storage {
         this.addIsCurrentAccountProperty(app, accountId);
       });
 
-      return q(apps);
+      return Promise.resolve(apps);
     }
 
     return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
@@ -268,7 +284,7 @@ export class JsonStorage implements storage.Storage {
     const app: storage.App = clone(this.apps[appId]);
     this.addIsCurrentAccountProperty(app, accountId);
 
-    return q(app);
+    return Promise.resolve(app);
   }
 
   public removeApp(accountId: string, appId: string): Promise<void> {
@@ -286,7 +302,7 @@ export class JsonStorage implements storage.Storage {
       promises.push(this.removeDeployment(accountId, appId, deploymentId));
     });
 
-    return q.all(promises).then(() => {
+    return Promise.all(promises).then(() => {
       delete this.appToDeploymentsMap[appId];
 
       const app: storage.App = clone(this.apps[appId]);
@@ -302,7 +318,7 @@ export class JsonStorage implements storage.Storage {
 
       this.saveStateAsync();
 
-      return q(<void>null);
+      return Promise.resolve(<void>null);
     });
   }
 
@@ -317,7 +333,7 @@ export class JsonStorage implements storage.Storage {
     merge(this.apps[app.id], app);
 
     this.saveStateAsync();
-    return q(<void>null);
+    return Promise.resolve(<void>null);
   }
 
   public transferApp(accountId: string, appId: string, email: string): Promise<void> {
@@ -380,7 +396,7 @@ export class JsonStorage implements storage.Storage {
     });
   }
 
-  public getUserFromAccessToken(accessToken: string): q.Promise<storage.Account> {
+  public getUserFromAccessToken(accessToken: string): Promise<storage.Account> {
     return this.getAccountIdFromAccessKey(accessToken).then((accountId: string) => {
       return this.getAccount(accountId);
     });
@@ -405,7 +421,7 @@ export class JsonStorage implements storage.Storage {
 
   public getCollaborators(accountId: string, appId: string): Promise<storage.CollaboratorMap> {
     return this.getApp(accountId, appId).then((app: storage.App) => {
-      return q<storage.CollaboratorMap>(app.collaborators);
+      return Promise.resolve(<storage.CollaboratorMap>(app.collaborators));
     });
   }
 
@@ -446,7 +462,7 @@ export class JsonStorage implements storage.Storage {
     this.deploymentKeyToDeploymentMap[deployment.key] = deployment.id;
 
     this.saveStateAsync();
-    return q(deployment.id);
+    return Promise.resolve(deployment.id);
   }
 
   public getDeploymentInfo(deploymentKey: string): Promise<storage.DeploymentInfo> {
@@ -463,7 +479,7 @@ export class JsonStorage implements storage.Storage {
       return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
     }
 
-    return q({ appId: appId, deploymentId: deploymentId });
+    return Promise.resolve({ appId: appId, deploymentId: deploymentId });
   }
 
   public getPackageHistoryFromDeploymentKey(deploymentKey: string): Promise<storage.Package[]> {
@@ -472,7 +488,7 @@ export class JsonStorage implements storage.Storage {
       return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
     }
 
-    return q(clone((<any>this.deployments[deploymentId]).packageHistory));
+    return Promise.resolve(clone((<any>this.deployments[deploymentId]).packageHistory));
   }
 
   public getDeployment(accountId: string, appId: string, deploymentId: string): Promise<storage.Deployment> {
@@ -480,7 +496,7 @@ export class JsonStorage implements storage.Storage {
       return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
     }
 
-    return q(clone(this.deployments[deploymentId]));
+    return Promise.resolve(clone(this.deployments[deploymentId]));
   }
 
   public getDeployments(accountId: string, appId: string): Promise<storage.Deployment[]> {
@@ -489,7 +505,7 @@ export class JsonStorage implements storage.Storage {
       const deployments = deploymentIds.map((id: string) => {
         return this.deployments[id];
       });
-      return q(clone(deployments));
+      return Promise.resolve(clone(deployments));
     }
 
     return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
@@ -513,7 +529,7 @@ export class JsonStorage implements storage.Storage {
     appDeployments.splice(appDeployments.indexOf(deploymentId), 1);
 
     this.saveStateAsync();
-    return q(<void>null);
+    return Promise.resolve(<void>null);
   }
 
   public updateDeployment(accountId: string, appId: string, deployment: storage.Deployment): Promise<void> {
@@ -527,7 +543,7 @@ export class JsonStorage implements storage.Storage {
     merge(this.deployments[deployment.id], deployment);
 
     this.saveStateAsync();
-    return q(<void>null);
+    return Promise.resolve(<void>null);
   }
 
   public commitPackage(accountId: string, appId: string, deploymentId: string, appPackage: storage.Package): Promise<storage.Package> {
@@ -552,7 +568,7 @@ export class JsonStorage implements storage.Storage {
     appPackage.label = "v" + deployment.packageHistory.length;
 
     this.saveStateAsync();
-    return q(clone(appPackage));
+    return Promise.resolve(clone(appPackage));
   }
 
   public clearPackageHistory(accountId: string, appId: string, deploymentId: string): Promise<void> {
@@ -565,7 +581,7 @@ export class JsonStorage implements storage.Storage {
     (<any>deployment).packageHistory = [];
 
     this.saveStateAsync();
-    return q(<void>null);
+    return Promise.resolve(<void>null);
   }
 
   public getPackageHistory(accountId: string, appId: string, deploymentId: string): Promise<storage.Package[]> {
@@ -574,7 +590,7 @@ export class JsonStorage implements storage.Storage {
       return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
     }
 
-    return q(clone(deployment.packageHistory));
+    return Promise.resolve(clone(deployment.packageHistory));
   }
 
   public updatePackageHistory(accountId: string, appId: string, deploymentId: string, history: storage.Package[]): Promise<void> {
@@ -591,12 +607,12 @@ export class JsonStorage implements storage.Storage {
     deployment.packageHistory = history;
     this.saveStateAsync();
 
-    return q(<void>null);
+    return Promise.resolve(<void>null);
   }
 
   public addBlob(blobId: string, stream: stream.Readable, streamLength: number): Promise<string> {
     this.blobs[blobId] = "";
-    return q.Promise<string>((resolve: (blobId: string) => void) => {
+    return new Promise<string>((resolve: (blobId: string) => void) => {
       stream
         .on("data", (data: string) => {
           this.blobs[blobId] += data;
@@ -610,7 +626,16 @@ export class JsonStorage implements storage.Storage {
 
   public getBlobUrl(blobId: string): Promise<string> {
     return this.getBlobServer().then((server: http.Server) => {
-      return server.address() + "/" + blobId;
+        const address = server.address();
+        if (typeof address === "string") {
+            return `${address}/${blobId}`;
+        } else if (typeof address === "object" && address !== null) {
+            // Use a proper hostname instead of `[::]`
+            const hostname = address.address === "::" ? "127.0.0.1" : address.address;
+            return `http://${hostname}:${address.port}/${blobId}`;
+        } else {
+            throw new Error("Invalid server address format");
+        }
     });
   }
 
@@ -618,7 +643,7 @@ export class JsonStorage implements storage.Storage {
     delete this.blobs[blobId];
 
     this.saveStateAsync();
-    return q(<void>null);
+    return Promise.resolve(<void>null);
   }
 
   public addAccessKey(accountId: string, accessKey: storage.AccessKey): Promise<string> {
@@ -637,7 +662,7 @@ export class JsonStorage implements storage.Storage {
     if (!accountAccessKeys) {
       accountAccessKeys = this.accountToAccessKeysMap[accountId] = [];
     } else if (accountAccessKeys.indexOf(accessKey.id) !== -1) {
-      return q("");
+      return Promise.resolve("");
     }
 
     accountAccessKeys.push(accessKey.id);
@@ -648,7 +673,7 @@ export class JsonStorage implements storage.Storage {
 
     this.saveStateAsync();
 
-    return q(accessKey.id);
+    return Promise.resolve(accessKey.id);
   }
 
   public getAccessKey(accountId: string, accessKeyId: string): Promise<storage.AccessKey> {
@@ -658,7 +683,7 @@ export class JsonStorage implements storage.Storage {
       return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
     }
 
-    return q(clone(this.accessKeys[accessKeyId]));
+    return Promise.resolve(clone(this.accessKeys[accessKeyId]));
   }
 
   public getAccessKeys(accountId: string): Promise<storage.AccessKey[]> {
@@ -669,7 +694,7 @@ export class JsonStorage implements storage.Storage {
         return this.accessKeys[id];
       });
 
-      return q(clone(accessKeys));
+      return Promise.resolve(clone(accessKeys));
     }
 
     return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
@@ -693,7 +718,7 @@ export class JsonStorage implements storage.Storage {
       }
 
       this.saveStateAsync();
-      return q(<void>null);
+      return Promise.resolve(<void>null);
     }
 
     return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
@@ -710,7 +735,7 @@ export class JsonStorage implements storage.Storage {
         this.accessKeyNameToAccountIdMap[accessKey.name].expires = accessKey.expires;
 
         this.saveStateAsync();
-        return q(<void>null);
+        return Promise.resolve(<void>null);
       }
     }
 
@@ -720,7 +745,7 @@ export class JsonStorage implements storage.Storage {
   public dropAll(): Promise<void> {
     if (this._blobServerPromise) {
       return this._blobServerPromise.then((server: http.Server) => {
-        const deferred: q.Deferred<void> = q.defer<void>();
+        const deferred: Deferred<void> = defer<void>();
         server.close((err?: Error) => {
           if (err) {
             deferred.reject(err);
@@ -732,7 +757,7 @@ export class JsonStorage implements storage.Storage {
       });
     }
 
-    return q(<void>null);
+    return Promise.resolve(<void>null);
   }
 
   private addIsCurrentAccountProperty(app: storage.App, accountId: string): void {
@@ -802,7 +827,7 @@ export class JsonStorage implements storage.Storage {
         }
       });
 
-      const deferred: q.Deferred<http.Server> = q.defer<http.Server>();
+      const deferred: Deferred<http.Server> = defer<http.Server>();
       const server: http.Server = app.listen(0, () => {
         deferred.resolve(server);
       });
@@ -820,6 +845,6 @@ export class JsonStorage implements storage.Storage {
   }
 
   private static getRejectedPromise(errorCode: storage.ErrorCode, message?: string): Promise<any> {
-    return q.reject(storage.storageError(errorCode, message));
+    return Promise.reject(storage.storageError(errorCode, message));
   }
 }
