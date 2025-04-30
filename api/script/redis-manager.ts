@@ -144,12 +144,6 @@ export class RedisManager {
 
   constructor() {
     if (process.env.REDIS_HOST && process.env.REDIS_PORT) {
-      console.log("=== Redis Configuration ===");
-      console.log("REDIS_HOST:", process.env.REDIS_HOST);
-      console.log("REDIS_PORT:", process.env.REDIS_PORT);
-      console.log("REDIS_KEY present:", !!process.env.REDIS_KEY);
-      console.log("REDIS_CLUSTER_ENABLED:", process.env.REDIS_CLUSTER_ENABLED);
-      console.log("REDIS_SSL:", process.env.REDIS_SSL);
       
       const redisConfig = {
         host: process.env.REDIS_HOST,

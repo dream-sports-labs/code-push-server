@@ -1,42 +1,119 @@
-// Seed data for Azurite local Azure Storage emulator
-const { TableClient, TableServiceClient, AzureNamedKeyCredential } = require("@azure/data-tables");
+// seed.js — Seed tables + history blobs for Azurite local emulator
 
-// Azurite connection config (uses dev storage)
+const {
+  TableClient,
+  TableServiceClient,
+  AzureNamedKeyCredential,
+} = require("@azure/data-tables");
+const {
+  BlobServiceClient,
+  StorageSharedKeyCredential,
+} = require("@azure/storage-blob");
+
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+
 const account = "devstoreaccount1";
-const accountKey = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
-const tableEndpoint = "http://127.0.0.1:10002/devstoreaccount1";
+const accountKey =
+  "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
 
-// Create credential and client
-const credential = new AzureNamedKeyCredential(account, accountKey);
-// Allow insecure connections for local development
+const tableEndpoint = `http://127.0.0.1:10002/${account}`;
+const blobEndpoint = `http://127.0.0.1:10000/${account}`;
+
+const tableCred = new AzureNamedKeyCredential(account, accountKey);
 const tableServiceClient = new TableServiceClient(
-  tableEndpoint, 
-  credential,
+  tableEndpoint,
+  tableCred,
   { allowInsecureConnection: true }
 );
 
-// Seed data structure (same as in your MySQL script)
+const blobCred = new StorageSharedKeyCredential(account, accountKey);
+const blobServiceClient = new BlobServiceClient(
+  blobEndpoint,
+  blobCred,
+  { allowInsecureConnection: true }
+);
+
+// ─── SEED DATA ────────────────────────────────────────────────────────────────
+
 const seedData = {
   accounts: [
-    { partitionKey: "Account", rowKey: "id_0", email: "user1@example.com", name: "User One", createdTime: new Date().getTime().toString() },
-    { partitionKey: "Account", rowKey: "id_1", email: "user2@example.com", name: "User Two", createdTime: new Date().getTime().toString() },
+    {
+      partitionKey: "Account",
+      rowKey: "id_0",
+      email: "user1@example.com",
+      name: "User One",
+      createdTime: Date.now().toString(),
+    },
+    {
+      partitionKey: "Account",
+      rowKey: "id_1",
+      email: "user2@example.com",
+      name: "User Two",
+      createdTime: Date.now().toString(),
+    },
   ],
   tenants: [
-    { partitionKey: "Tenant", rowKey: "tenant_1", displayName: "Organization One", createdBy: "id_0" },
-    { partitionKey: "Tenant", rowKey: "tenant_2", displayName: "Organization Two", createdBy: "id_1" },
+    {
+      partitionKey: "Tenant",
+      rowKey: "tenant_1",
+      displayName: "Organization One",
+      createdBy: "id_0",
+    },
+    {
+      partitionKey: "Tenant",
+      rowKey: "tenant_2",
+      displayName: "Organization Two",
+      createdBy: "id_1",
+    },
   ],
   apps: [
-    { partitionKey: "App", rowKey: "id_2", name: "App One", accountId: "id_0", tenantId: "tenant_1", createdTime: new Date().getTime().toString() },
-    { partitionKey: "App", rowKey: "id_3", name: "App Two", accountId: "id_1", tenantId: "tenant_2", createdTime: new Date().getTime().toString() },
-    { partitionKey: "App", rowKey: "id_4", name: "Independent App", accountId: "id_0", createdTime: new Date().getTime().toString() },
+    {
+      partitionKey: "App",
+      rowKey: "id_2",
+      name: "App One",
+      accountId: "id_0",
+      tenantId: "tenant_1",
+      createdTime: Date.now().toString(),
+    },
+    {
+      partitionKey: "App",
+      rowKey: "id_3",
+      name: "App Two",
+      accountId: "id_1",
+      tenantId: "tenant_2",
+      createdTime: Date.now().toString(),
+    },
+    {
+      partitionKey: "App",
+      rowKey: "id_4",
+      name: "Independent App",
+      accountId: "id_0",
+      createdTime: Date.now().toString(),
+    },
   ],
   collaborators: [
-    { partitionKey: "Collaborator", rowKey: "id_2:user1@example.com", email: "user1@example.com", accountId: "id_0", appId: "id_2", permission: "Owner", role: "Admin" },
-    { partitionKey: "Collaborator", rowKey: "id_3:user2@example.com", email: "user2@example.com", accountId: "id_1", appId: "id_3", permission: "Owner", role: "Admin" },
+    {
+      partitionKey: "Collaborator",
+      rowKey: "id_2:user1@example.com",
+      email: "user1@example.com",
+      accountId: "id_0",
+      appId: "id_2",
+      permission: "Owner",
+      role: "Admin",
+    },
+    {
+      partitionKey: "Collaborator",
+      rowKey: "id_3:user2@example.com",
+      email: "user2@example.com",
+      accountId: "id_1",
+      appId: "id_3",
+      permission: "Owner",
+      role: "Admin",
+    },
   ],
   deployments: [
     {
-      partitionKey: "Deployment", 
+      partitionKey: "Deployment",
       rowKey: "id_5",
       name: "Deployment One",
       key: "O25dwjupnmTCC-q70qC1CzWfO73NkSR75brivk",
@@ -45,7 +122,7 @@ const seedData = {
       createdTime: "1731269070",
     },
     {
-      partitionKey: "Deployment", 
+      partitionKey: "Deployment",
       rowKey: "id_6",
       name: "Deployment for App Two",
       key: "deployment_key_2",
@@ -54,33 +131,37 @@ const seedData = {
       createdTime: "1731269070",
     },
   ],
-  // Add deployment key pointers with the correct format (using SPACE as delimiter)
+  // for code-push lookup in storagev2 table
   deploymentKeyPointers: [
     {
-      partitionKey: "deploymentKey O25dwjupnmTCC-q70qC1CzWfO73NkSR75brivk", 
+      partitionKey:
+        "deploymentKey O25dwjupnmTCC-q70qC1CzWfO73NkSR75brivk",
       rowKey: "",
       appId: "id_2",
-      deploymentId: "id_5"
+      deploymentId: "id_5",
     },
     {
-      partitionKey: "deploymentKey deployment_key_2", 
+      partitionKey: "deploymentKey deployment_key_2",
       rowKey: "",
       appId: "id_3",
-      deploymentId: "id_6"
-    }
+      deploymentId: "id_6",
+    },
   ],
   packages: [
     {
-      partitionKey: "Package", 
+      partitionKey: "Package",
       rowKey: "pkg_1",
       appVersion: "1.0.0",
-      blobUrl: "https://codepush-secondary.blob.core.windows.net/storagev2/z98_ktyhgijjKQai7fIvDj6z_t6pb984637d-14f4-409d-9646-13a0665a3902",
+      blobUrl:
+        "https://codepush-secondary.blob.core.windows.net/storagev2/z98_ktyhgijjKQai7fIvDj6z_t6pb984637d-14f4-409d-9646-13a0665a3902",
       description: "Minor improvements",
       isDisabled: "false",
       isMandatory: "false",
       label: "v1",
-      manifestBlobUrl: "https://codepush-secondary.blob.core.windows.net/storagev2",
-      packageHash: "d581c94fa2c00b144f1b9a5cf786787826bdf4a9e12e4941c8d2541efc7518ed",
+      manifestBlobUrl:
+        "https://codepush-secondary.blob.core.windows.net/storagev2",
+      packageHash:
+        "d581c94fa2c00b144f1b9a5cf786787826bdf4a9e12e4941c8d2541efc7518ed",
       releasedBy: "user1@example.com",
       releaseMethod: "Upload",
       size: "256994",
@@ -89,7 +170,7 @@ const seedData = {
       rollout: "100",
     },
     {
-      partitionKey: "Package", 
+      partitionKey: "Package",
       rowKey: "pkg_current_1",
       appVersion: "1.0.0",
       blobUrl: "https://example.com/blob_v1",
@@ -102,12 +183,12 @@ const seedData = {
       releasedBy: "user1@example.com",
       releaseMethod: "Upload",
       size: "1024",
-      uploadTime: new Date().getTime().toString(),
+      uploadTime: Date.now().toString(),
       deploymentId: "id_5",
       rollout: "100",
     },
     {
-      partitionKey: "Package", 
+      partitionKey: "Package",
       rowKey: "pkg_current_2",
       appVersion: "1.2.0",
       blobUrl: "https://example.com/blob_v2",
@@ -120,12 +201,12 @@ const seedData = {
       releasedBy: "user2@example.com",
       releaseMethod: "Upload",
       size: "2048",
-      uploadTime: new Date().getTime().toString(),
+      uploadTime: Date.now().toString(),
       deploymentId: "id_6",
       rollout: "100",
     },
     {
-      partitionKey: "Package", 
+      partitionKey: "Package",
       rowKey: "pkg_hist_1",
       appVersion: "1.2.3",
       blobUrl: "https://example.com/blob_v0.9",
@@ -138,19 +219,19 @@ const seedData = {
       releasedBy: "user1@example.com",
       releaseMethod: "Upload",
       size: "900",
-      uploadTime: (new Date().getTime() - 1000000).toString(),
+      uploadTime: (Date.now() - 1000000).toString(),
       deploymentId: "id_5",
       rollout: "100",
     },
   ],
   accessKeys: [
     {
-      partitionKey: "AccessKey", 
+      partitionKey: "AccessKey",
       rowKey: "id_6",
       name: "accessKey1",
       accountId: "id_0",
       createdBy: "admin",
-      createdTime: new Date().getTime().toString(),
+      createdTime: Date.now().toString(),
       friendlyName: "Default Access Key",
       expires: "1735689600000",
       scope: "all",
@@ -158,81 +239,105 @@ const seedData = {
   ],
 };
 
-// Function to create table and insert entities
+// ─── TABLE SEEDING ────────────────────────────────────────────────────────────
+
 async function seedTable(tableName, entities) {
-  console.log(`Creating table ${tableName}...`);
-  
+  console.log(`→ Seeding table "${tableName}" (${entities.length} rows)`);
   try {
     await tableServiceClient.createTable(tableName);
-    console.log(`Created table ${tableName}`);
-
-    const tableClient = new TableClient(
-      tableEndpoint, 
-      tableName, 
-      credential,
-      { allowInsecureConnection: true }
-    );
-    
-    for (const entity of entities) {
-      console.log(`Adding entity to ${tableName}: ${entity.rowKey}`);
-      await tableClient.createEntity(entity);
-    }
-    
-    console.log(`Successfully seeded ${entities.length} entities to ${tableName}`);
-  } catch (error) {
-    // If table already exists, just add entities
-    if (error.code === 'TableAlreadyExists') {
-      console.log(`Table ${tableName} already exists, adding entities...`);
-      const tableClient = new TableClient(
-        tableEndpoint, 
-        tableName, 
-        credential,
-        { allowInsecureConnection: true }
-      );
-      
-      for (const entity of entities) {
-        try {
-          console.log(`Adding entity to ${tableName}: ${entity.rowKey}`);
-          await tableClient.createEntity(entity);
-        } catch (entityError) {
-          if (entityError.code === 'EntityAlreadyExists') {
-            console.log(`Entity ${entity.rowKey} already exists in ${tableName}`);
-          } else {
-            console.error(`Error adding entity ${entity.rowKey} to ${tableName}:`, entityError);
-          }
-        }
-      }
-      console.log(`Finished seeding ${tableName}`);
+    console.log(`  ✓ created table ${tableName}`);
+  } catch (e) {
+    if (e.code === "TableAlreadyExists") {
+      console.log(`  ⚠️ table ${tableName} already exists`);
     } else {
-      console.error(`Error creating table ${tableName}:`, error);
+      throw e;
+    }
+  }
+
+  const client = new TableClient(
+    tableEndpoint,
+    tableName,
+    tableCred,
+    { allowInsecureConnection: true }
+  );
+
+  for (const ent of entities) {
+    try {
+      await client.createEntity(ent);
+    } catch (e) {
+      if (e.code === "EntityAlreadyExists") {
+        // skip
+      } else {
+        console.error(`  ✗ error inserting ${ent.rowKey}:`, e);
+      }
     }
   }
 }
 
-// Main function to seed all tables
-async function seedAll() {
-  try {
-    // Create system table that CodePush requires
-    await seedTable('storagev2', [
-      { partitionKey: 'schema', rowKey: 'version', value: '2' }
-    ]);
-    
-    // Seed each table with its data
-    await seedTable('accounts', seedData.accounts);
-    await seedTable('tenants', seedData.tenants);
-    await seedTable('apps', seedData.apps);
-    await seedTable('collaborators', seedData.collaborators);
-    await seedTable('deployments', seedData.deployments);
-    // Add the deployment key pointers to the storagev2 table
-    await seedTable('storagev2', seedData.deploymentKeyPointers);
-    await seedTable('packages', seedData.packages);
-    await seedTable('accessKeys', seedData.accessKeys);
-    
-    console.log('✅ All data seeded successfully');
-  } catch (error) {
-    console.error('Error seeding data:', error);
+// ─── BLOB HISTORY SEEDING ─────────────────────────────────────────────────────
+
+async function seedHistoryBlobs() {
+  console.log("→ Seeding blob history into container packagehistoryv1");
+
+  const containerName = "packagehistoryv1";
+  const containerClient = blobServiceClient.getContainerClient(
+    containerName
+  );
+  await containerClient.createIfNotExists();
+
+  // Group packages by deploymentId
+  const historyMap = seedData.packages.reduce((map, pkg) => {
+    map[pkg.deploymentId] = map[pkg.deploymentId] || [];
+    map[pkg.deploymentId].push({
+      appVersion: pkg.appVersion,
+      label: pkg.label,
+      packageHash: pkg.packageHash,
+      rollout: Number(pkg.rollout),
+      isMandatory: pkg.isMandatory === "true",
+      blobUrl: pkg.blobUrl,
+      manifestBlobUrl: pkg.manifestBlobUrl,
+      size: Number(pkg.size),
+      description: pkg.description,
+      releasedBy: pkg.releasedBy,
+      releaseMethod: pkg.releaseMethod,
+      uploadTime: Number(pkg.uploadTime),
+    });
+    return map;
+  }, {});
+
+  // Upload one history-blob per deploymentId
+  for (const [deploymentId, history] of Object.entries(historyMap)) {
+    const content = JSON.stringify(history);
+    await containerClient
+      .getBlockBlobClient(deploymentId)
+      .upload(content, Buffer.byteLength(content));
+    console.log(`  ✓ uploaded history for "${deploymentId}"`);
   }
 }
 
-// Run the seed function
-seedAll().catch(console.error); 
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+
+async function seedAll() {
+  // system table for code-push storagev2
+  await seedTable("storagev2", [{ partitionKey: "schema", rowKey: "version", value: "2" }]);
+
+  // all other tables
+  await seedTable("accounts", seedData.accounts);
+  await seedTable("tenants", seedData.tenants);
+  await seedTable("apps", seedData.apps);
+  await seedTable("collaborators", seedData.collaborators);
+  await seedTable("deployments", seedData.deployments);
+  await seedTable("storagev2", seedData.deploymentKeyPointers);
+  await seedTable("packages", seedData.packages);
+  await seedTable("accessKeys", seedData.accessKeys);
+
+  // now seed the missing history blobs
+  await seedHistoryBlobs();
+
+  console.log("✅ All tables and history blobs seeded successfully");
+}
+
+seedAll().catch((err) => {
+  console.error("❌ Seeding failed:", err);
+  process.exit(1);
+});

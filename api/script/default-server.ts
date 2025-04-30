@@ -49,12 +49,6 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
   let isSecretsManagerConfigured: boolean;
   let secretValue: any;
 
-  console.log("=== Starting Server ===");
-  console.log("Config object:", JSON.stringify({
-    storageType: config.storage.type,
-    cacheType: config.cache.type,
-    useJsonStorage: useJsonStorage
-  }));
 
   Promise.resolve(<void>(null))
     .then(async () => {
@@ -64,7 +58,6 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
           console.log("Initializing S3Storage from config");
           storage = new S3Storage(); // You may want to pass config values to S3Storage constructor
         } else if (config.storage.type === "azure") {
-          console.log("Initializing AzureStorage from config with account:", config.storage.account);
           storage = new AzureStorage(config.storage.account, config.storage.accessKey);
         } else {
           throw new Error("Unsupported storage provider");
