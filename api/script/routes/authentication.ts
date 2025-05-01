@@ -8,6 +8,7 @@ import { sendErrorToDatadog } from "../utils/tracer";
 // Replace with your actual Google Client ID (from Google Developer Console)
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "<Your Google Client ID>";
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+const LOCAL_GOOGLE_TOKEN = process.env.LOCAL_GOOGLE_TOKEN || "mock-google-token";
 
 export interface AuthenticationConfig {
   storage: storage.Storage;
@@ -37,6 +38,21 @@ export class Authentication {
   // Validate the Google ID token received from the client or web dashboard
   public async verifyGoogleToken(idToken: string): Promise<TokenPayload> {
     try {
+      // For development or test environments, check if using the mock token
+      if ((process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") && 
+          idToken === LOCAL_GOOGLE_TOKEN) {
+        // Return a mock payload for the default test user
+        return {
+          email: "user1@example.com",
+          name: "User One",
+          sub: "mock-user-id",
+          iss: "mock-issuer",
+          aud: "mock-audience",
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + 3600
+        } as TokenPayload;
+      }
+
       const ticket = await client.verifyIdToken({
         idToken: idToken,
         audience: GOOGLE_CLIENT_ID, // Make sure this matches the client ID used in your app
@@ -78,6 +94,17 @@ export class Authentication {
     if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
       // Extract token from auth header
       const authHeader = req.headers.authorization;
+      
+      // Handle mock Google token for development without GCP setup
+      if (authHeader && authHeader.startsWith('Bearer ') && authHeader.substring(7) === LOCAL_GOOGLE_TOKEN) {
+        req.user = {
+          id: "id_0", // Default seed user from seedData.ts
+          email: "user1@example.com",
+          name: "User One",
+        };
+        return next();
+      }
+      
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         
@@ -109,7 +136,11 @@ export class Authentication {
     });
     return; // Important to prevent next() being called twice
       } else {
-        req.user = req.headers.userId;
+        req.user = req.headers.userId || {
+          id: "id_0", // Default to first user in seed data
+          email: "user1@example.com",
+          name: "User One",
+        };
       }
       return next();
     }
