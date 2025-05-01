@@ -13,8 +13,7 @@ const {
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 
 const account = process.env.AZURE_STORAGE_ACCOUNT;
-const accountKey =
-  process.env.AZURE_STORAGE_ACCESS_KEY;
+const accountKey =process.env.AZURE_STORAGE_ACCESS_KEY;
 
 const tableEndpoint = `http://127.0.0.1:10002/${account}`;
 const blobEndpoint = `http://127.0.0.1:10000/${account}`;

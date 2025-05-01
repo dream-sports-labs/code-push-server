@@ -100,7 +100,11 @@ export class Authentication {
     })
     .catch(() => {
       // Only fall back to default for missing Authorization header
-      req.user = { id: "id_0" };
+      req.user = {
+          id: "id_0",
+          email: "user1@example.com",
+          name: "User One",
+        };
       next();
     });
     return; // Important to prevent next() being called twice
