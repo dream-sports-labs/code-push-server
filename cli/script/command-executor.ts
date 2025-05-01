@@ -59,7 +59,7 @@ import { Organisation } from "./types/rest-definitions";
 const properties = require("properties");
 
 const CLI_HEADERS: Headers = {
-  "X-Dota-CLI-Version": packageJson.version,
+  "X-Dota-CodePush-Version": packageJson.version,
 };
 
 /** Deprecated */

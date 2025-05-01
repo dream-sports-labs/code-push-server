@@ -56,3 +56,4 @@ AzuriteConfig
 
 # VS Code settings
 .vscode
+.vscode*
