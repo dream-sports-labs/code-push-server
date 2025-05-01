@@ -13,6 +13,7 @@ import { Storage } from "./storage/storage";
 import { Response } from "express";
 import rateLimit from "express-rate-limit";
 import config from "../config";
+import { StorageType, StorageConfig } from "../config-utils";
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || "<your-s3-bucket-name>";
 const RDS_DB_INSTANCE_IDENTIFIER = process.env.RDS_DB_INSTANCE_IDENTIFIER || "<your-rds-instance>";
 const SECRETS_MANAGER_SECRET_ID = process.env.SECRETS_MANAGER_SECRET_ID || "<your-secret-id>";
@@ -52,19 +53,31 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
 
   Promise.resolve(<void>(null))
     .then(async () => {
-      if (!useJsonStorage) {
-        // Use config layer for storage
-        if (config.storage.type === "aws") {
-          console.log("Initializing S3Storage from config");
-          storage = new S3Storage(); // You may want to pass config values to S3Storage constructor
-        } else if (config.storage.type === "azure") {
-          storage = new AzureStorage(config.storage.account, config.storage.accessKey);
+      // Use config layer for storage - initialize based on config.storage.type
+      const storageType = config.storage.type;
+      
+      if (storageType === StorageType.AWS) {
+        console.log("Initializing S3Storage");
+        storage = new S3Storage();
+      } 
+      else if (storageType === StorageType.AZURE) {
+        console.log("Initializing AzureStorage");
+        const azureConfig = config.storage;
+        if (azureConfig.type === StorageType.AZURE) {
+          storage = new AzureStorage(
+            azureConfig.account,
+            azureConfig.accessKey
+          );
         } else {
-          throw new Error("Unsupported storage provider");
+          throw new Error("Invalid Azure storage configuration");
         }
-      } else {
-        console.log("Using JsonStorage (useJsonStorage is true)");
+      }
+      else if (storageType === StorageType.LOCAL) {
+        console.log("Initializing JsonStorage");
         storage = new JsonStorage();
+      }
+      else {
+        throw new Error("Unsupported storage provider configuration");
       }
     })
     .then(() => {

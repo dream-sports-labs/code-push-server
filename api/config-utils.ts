@@ -1,6 +1,7 @@
 export enum StorageType {
   AWS = "aws",
-  AZURE = "azure"
+  AZURE = "azure",
+  LOCAL = "local"
 }
 
 export type StorageConfig =
@@ -15,6 +16,10 @@ export type StorageConfig =
       type: StorageType.AZURE;
       account: string;
       accessKey: string;
+    }
+  | {
+      type: StorageType.LOCAL;
+      path?: string;
     };
 
 export type CacheConfig = {
@@ -23,11 +28,11 @@ export type CacheConfig = {
   port: string;
 };
 
-export interface CodePushConfig {
+export interface DotaConfig {
   storage: StorageConfig;
   cache: CacheConfig;
 }
 
-export function defineConfig(config: CodePushConfig): CodePushConfig {
+export function defineConfig(config: DotaConfig): DotaConfig {
   return config;
 } 

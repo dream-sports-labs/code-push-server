@@ -8,7 +8,7 @@ const sequelize = new Sequelize("codepushdb", "root", "root", {
 });
 
 // Seed data
-const seedData = {
+export const seedData = {
   accounts: [
     { id: "id_0", email: "user1@example.com", name: "User One", createdTime: new Date().getTime() },
     { id: "id_1", email: "user2@example.com", name: "User Two", createdTime: new Date().getTime() },

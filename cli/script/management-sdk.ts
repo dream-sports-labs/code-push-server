@@ -621,7 +621,7 @@ class AccountManager {
 
   private getCodePushError(error: any, response: superagent.Response): CodePushError {
     if (error.syscall === "getaddrinfo") {
-      error.message = `Unable to connect to the CodePush server. Are you offline, or behind a firewall or proxy?\n(${error.message})`;
+      error.message = `Unable to connect to the Dota server. Are you offline, or behind a firewall or proxy?\n(${error.message})`;
     }
 
     return {

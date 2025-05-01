@@ -50,7 +50,7 @@ import {
   fileExists
 } from "./utils/file-utils";
 
-const configFilePath: string = path.join(process.env.LOCALAPPDATA || process.env.HOME, ".code-push.config");
+const configFilePath: string = path.join(process.env.LOCALAPPDATA || process.env.HOME, ".dota.config");
 const emailValidator = require("email-validator");
 const packageJson = require("../../package.json");
 const parseXml = Q.denodeify(require("xml2js").parseString);
@@ -59,7 +59,7 @@ import { Organisation } from "./types/rest-definitions";
 const properties = require("properties");
 
 const CLI_HEADERS: Headers = {
-  "X-CodePush-CLI-Version": packageJson.version,
+  "X-Dota-CLI-Version": packageJson.version,
 };
 
 /** Deprecated */
@@ -457,7 +457,7 @@ export function execute(command: cli.ICommand) {
 
         if (!connectionInfo) {
           throw new Error(
-            "You are not currently logged in. Run the 'code-push-standalone login' command to authenticate with the CodePush server."
+            "You are not currently logged in. Run the 'dota-standalone login' command to authenticate with the Dota server."
           );
         }
 
@@ -1301,7 +1301,7 @@ export const release = (command: cli.IReleaseCommand): Promise<void> => {
 export const releaseReact = (command: cli.IReleaseReactCommand): Promise<void> => {
   let bundleName: string = command.bundleName;
   let entryFile: string = command.entryFile;
-  const outputFolder: string = command.outputDir || path.join(os.tmpdir(), "CodePush");
+  const outputFolder: string = command.outputDir || path.join(os.tmpdir(), "Dota");
   const platform: string = (command.platform = command.platform.toLowerCase());
   const releaseCommand: cli.IReleaseCommand = <any>command;
   // Check for app and deployment exist before releasing an update.
@@ -1413,7 +1413,7 @@ export const releaseReact = (command: cli.IReleaseReactCommand): Promise<void> =
         }
       })
       .then(() => {
-        log(chalk.cyan("\nReleasing update contents to CodePush:\n"));
+        log(chalk.cyan("\nReleasing update contents to Dota:\n"));
         return release(releaseCommand);
       })
       .then(() => {
@@ -1542,7 +1542,7 @@ function serializeConnectionInfo(accessKey: string, preserveAccessKeyOnLogout: b
 
   log(
     `\r\nSuccessfully logged-in. Your session file was written to ${chalk.cyan(configFilePath)}. You can run the ${chalk.cyan(
-      "code-push logout"
+      "dota-standalone logout"
     )} command at any time to delete this file and terminate your session.\r\n`
   );
 }
@@ -1557,7 +1557,7 @@ function sessionList(command: cli.ISessionListCommand): Promise<void> {
 
 function sessionRemove(command: cli.ISessionRemoveCommand): Promise<void> {
   if (os.hostname() === command.machineName) {
-    throw new Error("Cannot remove the current login session via this command. Please run 'code-push-standalone logout' instead.");
+    throw new Error("Cannot remove the current login session via this command. Please run 'dota-standalone logout' instead.");
   } else {
     return confirm().then((wasConfirmed: boolean): Promise<void> => {
       if (wasConfirmed) {

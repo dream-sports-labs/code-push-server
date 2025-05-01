@@ -1,7 +1,7 @@
 {
-  "name": "code-push-cli",
+  "name": "dota-cli",
   "version": "0.0.1",
-  "description": "Management CLI for the CodePush service",
+  "description": "Management CLI for the Dota service",
   "main": "./script/cli.js",
   "scripts": {
     "start": "node ./bin/script/cli.js",
@@ -14,7 +14,7 @@
     "exec" : "npm run build && npm run build && npm install -g"
   },
   "bin": {
-    "code-push-standalone": "./bin/script/cli.js"
+    "dota-standalone": "./bin/script/cli.js"
   },
   "repository": {
     "type": "git",

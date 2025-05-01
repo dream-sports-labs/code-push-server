@@ -9,7 +9,7 @@ import parseDuration = require("parse-duration");
 
 const packageJson = require("../../package.json");
 const ROLLOUT_PERCENTAGE_REGEX: RegExp = /^(100|[1-9][0-9]|[1-9])%?$/;
-const USAGE_PREFIX = "Usage: code-push-standalone";
+const USAGE_PREFIX = "Usage: dota-standalone";
 
 // Command categories are:  access-key, app, release, deployment, deployment-key, login, logout, register
 let isValidCommandCategory = false;
@@ -26,7 +26,7 @@ export function showHelp(showRootDescription?: boolean): void {
       console.log(chalk.cyan("\\___/\\___/\\_,_/\\__/" + chalk.green("_/   \\_,_/___/_//_/")) + "    CLI v" + packageJson.version);
       console.log(chalk.cyan("======================================"));
       console.log("");
-      console.log("CodePush is a service that enables you to deploy mobile app updates directly to your users' devices.\n");
+      console.log("Dota is a service that enables you to deploy mobile app updates directly to your users' devices.\n");
     }
 
     yargs.showHelp();
