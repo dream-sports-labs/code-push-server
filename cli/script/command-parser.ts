@@ -332,7 +332,7 @@ yargs
 
     addCommonConfiguration(yargs);
   })
-  .command("app", "View and manage your CodePush apps", (yargs: yargs.Argv) => {
+  .command("app", "View and manage your Dota apps", (yargs: yargs.Argv) => {
     isValidCommandCategory = true;
     yargs
       .usage(USAGE_PREFIX + " app <command>")
@@ -394,14 +394,14 @@ yargs
 
     addCommonConfiguration(yargs);
   })
-  .command("debug", "View the CodePush debug logs for a running app", (yargs: yargs.Argv) => {
+  .command("debug", "View the Dota debug logs for a running app", (yargs: yargs.Argv) => {
     isValidCommandCategory = true;
     isValidCommand = true;
     yargs
       .usage(USAGE_PREFIX + " debug <platform>")
       .demand(/*count*/ 1, /*max*/ 1) // Require exactly one non-option arguments
-      .example("debug android", "View the CodePush debug logs for an Android emulator or device")
-      .example("debug ios", "View the CodePush debug logs for the iOS simulator");
+      .example("debug android", "View the Dota debug logs for an Android emulator or device")
+      .example("debug ios", "View the Dota debug logs for the iOS simulator");
 
     addCommonConfiguration(yargs);
   })
@@ -452,31 +452,31 @@ yargs
 
     addCommonConfiguration(yargs);
   })
-  .command("link", "Link an additional authentication provider (e.g. GitHub) to an existing CodePush account", (yargs: yargs.Argv) => {
+  .command("link", "Link an additional authentication provider (e.g. GitHub) to an existing Dota account", (yargs: yargs.Argv) => {
     isValidCommandCategory = true;
     isValidCommand = true;
     yargs
       .usage(USAGE_PREFIX + " link")
       .demand(/*count*/ 0, /*max*/ 1) //set 'max' to one to allow usage of serverUrl undocument parameter for testing
-      .example("link", "Links an account on the CodePush server")
+      .example("link", "Links an account on the Dota server")
       .check((argv: any, aliases: { [aliases: string]: string }): any => isValidCommand); // Report unrecognized, non-hyphenated command category.
 
     addCommonConfiguration(yargs);
   })
-  .command("login", "Authenticate with the CodePush server in order to begin managing your apps", (yargs: yargs.Argv) => {
+  .command("login", "Authenticate with the Dota server in order to begin managing your apps", (yargs: yargs.Argv) => {
     isValidCommandCategory = true;
     isValidCommand = true;
     yargs
       .usage(USAGE_PREFIX + " login [options]")
       .demand(/*count*/ 0, /*max*/ 1) //set 'max' to one to allow usage of serverUrl undocument parameter for testing
-      .example("login", "Logs in to the CodePush server")
+      .example("login", "Logs in to the Dota server")
       .example("login --accessKey mykey", 'Logs in on behalf of the user who owns and created the access key "mykey"')
       .option("accessKey", {
         alias: "key",
         default: null,
         demand: false,
         description:
-          "Access key to authenticate against the CodePush server with, instead of providing your username and password credentials",
+          "Access key to authenticate against the Dota server with, instead of providing your username and password credentials",
         type: "string",
       })
       .check((argv: any, aliases: { [aliases: string]: string }): any => isValidCommand); // Report unrecognized, non-hyphenated command category.
@@ -624,13 +624,13 @@ yargs
 
     addCommonConfiguration(yargs);
   })
-  .command("register", "Register a new CodePush account", (yargs: yargs.Argv) => {
+  .command("register", "Register a new Dota account", (yargs: yargs.Argv) => {
     isValidCommandCategory = true;
     isValidCommand = true;
     yargs
       .usage(USAGE_PREFIX + " register")
       .demand(/*count*/ 0, /*max*/ 1) //set 'max' to one to allow usage of serverUrl undocument parameter for testing
-      .example("register", "Registers a new CodePush account")
+      .example("register", "Registers a new Dota account")
       .check((argv: any, aliases: { [aliases: string]: string }): any => isValidCommand); // Report unrecognized, non-hyphenated command category.
 
     addCommonConfiguration(yargs);
