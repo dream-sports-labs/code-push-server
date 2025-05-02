@@ -20,11 +20,12 @@ let wasHelpShown = false;
 export function showHelp(showRootDescription?: boolean): void {
   if (!wasHelpShown) {
     if (showRootDescription) {
-      console.log(chalk.cyan("  _____        __  " + chalk.green("  ___           __ ")));
-      console.log(chalk.cyan(" / ___/__  ___/ /__" + chalk.green(" / _ \\__ _____ / / ")));
-      console.log(chalk.cyan("/ /__/ _ \\/ _  / -_)" + chalk.green(" ___/ // (_-</ _ \\")));
-      console.log(chalk.cyan("\\___/\\___/\\_,_/\\__/" + chalk.green("_/   \\_,_/___/_//_/")) + "    CLI v" + packageJson.version);
-      console.log(chalk.cyan("======================================"));
+      console.log(chalk.cyan("  ____     ___   _____    _    "));
+      console.log(chalk.cyan(" |  _ \\   / _ \\ |_   _|  / \\   "));
+      console.log(chalk.cyan(" | | | | | | | |  | |   / _ \\  "));
+      console.log(chalk.cyan(" | |_| | | |_| |  | |  / ___ \\ "));
+      console.log(chalk.cyan(" |____/   \\___/   |_| /_/   \\_\\") + "  CLI v" + packageJson.version);
+      console.log(chalk.cyan("=================================="));
       console.log("");
       console.log("Dota is a service that enables you to deploy mobile app updates directly to your users' devices.\n");
     }
