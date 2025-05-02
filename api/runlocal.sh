@@ -52,6 +52,11 @@ echo "→ Storage will be saved to ${LOCAL_STORAGE_PATH}"
 echo "Building TypeScript files..."
 npm run build
 
+# Copy JsonStorage.json to the bin directory where the server looks for it
+echo "Copying JsonStorage.json to bin directory..."
+mkdir -p bin/script/storage
+cp ./JsonStorage.json bin/script/storage/JsonStorage.json
+
 # Start server with local storage configuration
 echo "Press Ctrl+C to stop and cleanup"
 npm start 

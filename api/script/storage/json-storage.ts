@@ -5,6 +5,7 @@ import * as express from "express";
 import * as fs from "fs";
 import * as http from "http";
 import * as stream from "stream";
+import * as path from "path";
 
 import * as storage from "./storage";
 
@@ -69,11 +70,12 @@ export class JsonStorage implements storage.Storage {
 
   private loadStateAsync(): void {
     if (this.disablePersistence) return;
-    console.log(__dirname)
-    let pathName = __dirname + "/JsonStorage.json";
+    
+    // Use environment variable if set, otherwise use the default path
+    let pathName = process.env.LOCAL_STORAGE_PATH || path.join(__dirname, "JsonStorage.json");
         
     fs.access(pathName, fs.constants.F_OK, (err) => {
-            //console.log(err ? "File does not exist" : "File exists");
+            console.log(err ? "File does not exist" : "File exists");
     });
     fs.exists(
       pathName,
@@ -399,6 +401,8 @@ export class JsonStorage implements storage.Storage {
   public getUserFromAccessToken(accessToken: string): Promise<storage.Account> {
     return this.getAccountIdFromAccessKey(accessToken).then((accountId: string) => {
       return this.getAccount(accountId);
+    }).catch(error => {
+      throw error;
     });
   }
 

@@ -8,7 +8,6 @@ import { sendErrorToDatadog } from "../utils/tracer";
 // Replace with your actual Google Client ID (from Google Developer Console)
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "<Your Google Client ID>";
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
-const LOCAL_GOOGLE_TOKEN = process.env.LOCAL_GOOGLE_TOKEN || "mock-google-token";
 
 export interface AuthenticationConfig {
   storage: storage.Storage;
@@ -75,47 +74,52 @@ export class Authentication {
 
   // Middleware to authenticate requests using Google ID token
   public async authenticate(req: Request, res: Response, next: (err?: Error) => void) {
+    // Special case for mock-google-token in development mode
+    if ((process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") && 
+        req.headers.authorization?.split("Bearer ")[1] === "mock-google-token") {
+      req.user = {
+        id: "id_0",
+        email: "default@example.com",
+        name: "Default User"
+      };
+      return next();
+    }
+
     // Bypass authentication in development mode
     if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
       const token = req.headers.authorization?.split("Bearer ")[1];
       
       // If token is provided, check if it's valid
       if (token) {
-        // Allow local development token
-        if (token === LOCAL_GOOGLE_TOKEN) {
-          req.user = {
-            id: "id_0", // Default to first user in seed data
-            email: "user1@example.com",
-            name: "User One"
-          };
-          return next();
+        try {
+          // Use the storage mechanism to look up the token, just like in production
+          const user = await this._storageInstance.getUserFromAccessToken(token);
+          if (user) {
+            req.user = user;
+            return next();
+          } else {
+            // For expired or invalid tokens, return 401
+            return res.status(401).send("Access key has expired or is invalid");
+          }
+        } catch (error) {
+          // If there's an error looking up the token, return 401
+          return res.status(401).send("Invalid Access token");
         }
-        
-        // Use the token to find the account
-        // First check if the key exists and is not expired
-        this._storageInstance.isAccessKeyValid(token)
-          .then(isValid => {
-            if (!isValid) {
-              // For expired or invalid keys, return 401 directly
-              res.status(401).send("Access key has expired or is invalid");
-              return;
-            }
-            
-            // If key is valid, get the associated account
-            return this._storageInstance.getAccountIdFromAccessKey(token)
-              .then(accountId => {
-                req.user = { id: accountId };
-                next();
-              });
-          })
-          .catch((error) => {
-            //fail request in case of error for missing Authorization header
-            return res.status(401).send("Invalid Access token");
-          });
-        return; // Important to prevent next() being called twice
       } else {
-        // No token provided, require authentication even in dev mode
-        return res.status(401).send("Authentication required. Please provide a valid token.");
+        const userId = Array.isArray(req.headers.userid) ? req.headers.userid[0] : req.headers.userid;
+        if (userId) {
+            const user = await this.getUserById(userId);
+            if (user) {
+                req.user = {
+                  id: userId
+                };
+                return next();
+            } else {
+                return res.status(401).send("User not found");    
+            }
+        } else {
+            return res.status(401).send("Missing token and userid");
+        }
       }
     }
 

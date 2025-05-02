@@ -40,12 +40,15 @@ export DB_NAME=codepushdb
 
 # Azure Storage Configuration
 export STORAGE_PROVIDER=azure
-export AZURE_STORAGE_ACCOUNT=
-export AZURE_STORAGE_ACCESS_KEY=
 export AZURE_STORAGE_CONNECTION_STRING=
 export AZURE_STORAGE_TABLE_HOST="127.0.0.1:10002"
 export EMULATED=true
 
+export AZURE_STORAGE_ACCOUNT=devstoreaccount1
+export AZURE_STORAGE_ACCESS_KEY=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+export AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;\
+AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFTIazVE1UvGzGmZVOFIfuSRGNbr5mAZ1G21hZqGRZELWZ2Evwg==;\
+TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
 # Server Configuration
 export PORT=3010
 export NODE_ENV=development

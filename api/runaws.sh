@@ -48,15 +48,15 @@ if lsof -ti:3010 >/dev/null; then
 fi
 
 # Check if seed data script for AWS exists and run it
-if [ -f "script/storage/seedDataAws.ts" ]; then
+if [ -f "script/storage/seedData.ts" ]; then
   echo "→ Seeding AWS storage with sample data"
   echo "# Seed AWS storage with sample data"
   echo "# This will populate the following:"
   echo "# - Accounts, apps, deployments, and packages"
   echo "# - Deployment keys that match API requests"
-  npx ts-node script/storage/seedDataAws.ts
+  npx ts-node script/storage/seedData.ts
 else
-  echo "Warning: No AWS seed data script found at script/storage/seedDataAws.ts"
+  echo "Warning: No AWS seed data script found at script/storage/seedData.ts"
   echo "You may need to create this script or manually seed the data"
 fi
 

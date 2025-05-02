@@ -274,14 +274,25 @@ export class AzureStorage implements storage.Storage {
   }
 
   public getUserFromAccessToken(accessToken: string): Promise<storage.Account> {
-    const partitionKey: string = Keys.getShortcutAccessKeyPartitionKey(accessToken);
+    // Create partition key without hashing the token in development mode
+    const useHashedKey = process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
+    const partitionKey: string = Keys.getShortcutAccessKeyPartitionKey(accessToken, useHashedKey);
     const rowKey: string = "";
 
     return this._setupPromise
       .then(() => {
         return this.retrieveByKey(partitionKey, rowKey);
       })
-      .catch(AzureStorage.azureErrorHandler);
+      .then(async (accessKeyPointer: AccessKeyPointer) => {    
+        if (!accessKeyPointer) {
+          throw new Error("Access key not found");
+        }
+        return this.getAccount(accessKeyPointer.accountId);
+      })
+      .catch((error: any) => {
+        console.error("Error retrieving account:", error);
+        throw error;
+      });
   }
 
   public getAccountByEmail(email: string): Promise<storage.Account> {
@@ -318,21 +329,29 @@ export class AzureStorage implements storage.Storage {
   }
 
   public getAccountIdFromAccessKey(accessKey: string): Promise<string> {
-    const partitionKey: string = Keys.getShortcutAccessKeyPartitionKey(accessKey);
+    // Don't hash the key in development mode
+    const useHashedKey = process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
+    const partitionKey: string = Keys.getShortcutAccessKeyPartitionKey(accessKey, useHashedKey);
     const rowKey: string = "";
-
+    
     return this._setupPromise
       .then(() => {
         return this.retrieveByKey(partitionKey, rowKey);
       })
       .then((accountIdObject: AccessKeyPointer) => {
+        if (!accountIdObject) {
+          throw storage.storageError(storage.ErrorCode.NotFound, "Access key not found");
+        }
+        
         if (new Date().getTime() >= accountIdObject.expires) {
           throw storage.storageError(storage.ErrorCode.Expired, "The access key has expired.");
         }
 
         return accountIdObject.accountId;
       })
-      .catch(AzureStorage.azureErrorHandler);
+      .catch((error) => {
+        throw AzureStorage.azureErrorHandler(error);
+      });
   }
 
   public getTenants(accountId: string): Promise<storage.Organization[]> {

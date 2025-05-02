@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Path for JsonStorage file
-const storagePath = process.env.LOCAL_STORAGE_PATH || path.join(process.cwd(), 'JsonStorage.json');
+const storagePath = process.env.LOCAL_STORAGE_PATH || path.join(__dirname, 'JsonStorage.json');
 
 // Define NIL_UUID for consistent usage
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
@@ -179,7 +179,16 @@ const jsonStorageData = {
       "createdBy": "admin",
       "createdTime": Date.now(),
       "friendlyName": "Default Access Key",
-      "expires": 1735689600000,
+      "expires": Date.now() + (365 * 24 * 60 * 60 * 1000),
+      "scope": "all"
+    },
+    "mock_token_key": {
+      "name": "mock-google-token",
+      "accountId": "id_0",
+      "createdBy": "admin",
+      "createdTime": Date.now(),
+      "friendlyName": "Mock Google Token for Development",
+      "expires": Date.now() + (365 * 24 * 60 * 60 * 1000),
       "scope": "all"
     }
   },
@@ -230,6 +239,16 @@ const jsonStorageData = {
         "uploadTime": Date.now()
       }
     ]
+  },
+  "accessKeyNameToAccountIdMap": {
+    "accessKey1": {
+      "accountId": "id_0",
+      "expires": Date.now() + (365 * 24 * 60 * 60 * 1000)
+    },
+    "mock-google-token": {
+      "accountId": "id_0",
+      "expires": Date.now() + (365 * 24 * 60 * 60 * 1000)
+    }
   }
 };
 
