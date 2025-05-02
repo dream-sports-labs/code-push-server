@@ -457,7 +457,7 @@ export function execute(command: cli.ICommand) {
 
         if (!connectionInfo) {
           throw new Error(
-            "You are not currently logged in. Run the 'dota-standalone login' command to authenticate with the Dota server."
+            "You are not currently logged in. Run the 'dota login' command to authenticate with the Dota server."
           );
         }
 
@@ -1542,7 +1542,7 @@ function serializeConnectionInfo(accessKey: string, preserveAccessKeyOnLogout: b
 
   log(
     `\r\nSuccessfully logged-in. Your session file was written to ${chalk.cyan(configFilePath)}. You can run the ${chalk.cyan(
-      "dota-standalone logout"
+      "dota logout"
     )} command at any time to delete this file and terminate your session.\r\n`
   );
 }
@@ -1557,7 +1557,7 @@ function sessionList(command: cli.ISessionListCommand): Promise<void> {
 
 function sessionRemove(command: cli.ISessionRemoveCommand): Promise<void> {
   if (os.hostname() === command.machineName) {
-    throw new Error("Cannot remove the current login session via this command. Please run 'dota-standalone logout' instead.");
+    throw new Error("Cannot remove the current login session via this command. Please run 'dota logout' instead.");
   } else {
     return confirm().then((wasConfirmed: boolean): Promise<void> => {
       if (wasConfirmed) {

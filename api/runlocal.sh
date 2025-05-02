@@ -5,7 +5,6 @@ cleanup() {
   echo "Cleaning up..."
   # Find and kill any process using port 3010
   lsof -ti:3010 | xargs kill -9 2>/dev/null || true
-  echo "Port 3010 has been released."
   exit 0
 }
 
@@ -32,31 +31,49 @@ export REDIS_PORT=6379
 
 # Check if port 3010 is already in use and release it
 if lsof -ti:3010 >/dev/null; then
-  echo "Port 3010 is already in use. Attempting to release it..."
-  lsof -ti:3010 | xargs kill -9
-  sleep 1
-  echo "Port released."
+  lsof -ti:3010 | xargs kill -9 > /dev/null 2>&1
 fi
 
 # Seed the JsonStorage with sample data
-echo "→ Seeding JsonStorage with sample data"
-echo "# This will populate the following:"
-echo "# - Accounts, apps, deployments, and packages"
-echo "# - Deployment keys that match API requests"
-npx ts-node script/storage/seedDataLocal.ts
-
-echo "Starting Code Push Server with Local JSON storage..."
-echo "→ Storage will be saved to ${LOCAL_STORAGE_PATH}"
+echo "🗂️ Initializing Local JSON storage..."
+npx ts-node script/storage/seedDataLocal.ts > /dev/null 2>&1
+echo "📂 Data seeded successfully"
 
 # Build TypeScript before starting server
-echo "Building TypeScript files..."
-npm run build
+echo "🔨 Building application..."
+npm run build > /dev/null 2>&1
 
 # Copy JsonStorage.json to the bin directory where the server looks for it
-echo "Copying JsonStorage.json to bin directory..."
-mkdir -p bin/script/storage
-cp ./JsonStorage.json bin/script/storage/JsonStorage.json
+mkdir -p bin/script/storage > /dev/null 2>&1
+cp ./JsonStorage.json bin/script/storage/JsonStorage.json > /dev/null 2>&1
 
 # Start server with local storage configuration
-echo "Press Ctrl+C to stop and cleanup"
-npm start 
+echo "🛜 Starting server with Local storage..."
+npm start > server.log 2>&1 &
+SERVER_PID=$!
+
+# Wait for server to be ready (checking if port 3010 is listening)
+echo "⏳ Waiting for server to be ready..."
+while ! lsof -i:3010 -sTCP:LISTEN >/dev/null 2>&1; do
+  sleep 1
+  # Check if server is still running
+  if ! kill -0 $SERVER_PID 2>/dev/null; then
+    echo "❌ Server failed to start. Check server.log for details."
+    exit 1
+  fi
+done
+
+echo "🚀 Server started with Local storage"
+
+# Clean up before login
+echo "🧹 Cleaning environment before login..."
+npm run exec:clean > /dev/null 2>&1
+
+# Login using CLI
+echo "🔑 Logging in to CLI..."
+dota login http://localhost:3010 --accessKey=mock-google-token
+
+# Keep the script running
+echo "📝 Server log available at: $(pwd)/server.log"
+echo "⏹️  Press Ctrl+C to stop the server"
+wait $SERVER_PID

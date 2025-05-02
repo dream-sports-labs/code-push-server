@@ -2,10 +2,8 @@
 
 # Function to handle cleanup on exit
 cleanup() {
-  echo "Cleaning up..."
   # Find and kill any process using port 3010
   lsof -ti:3010 | xargs kill -9 2>/dev/null || true
-  echo "Port 3010 has been released."
   exit 0
 }
 
@@ -32,39 +30,58 @@ export LOCAL_GOOGLE_TOKEN="mock-google-token"
 
 # Check if LocalStack is running
 if ! curl -s http://localhost:4566 > /dev/null; then
-  echo "LocalStack is not running. Please start it with:"
-  echo "docker run --rm -p 4566:4566 -p 4571:4571 localstack/localstack"
+  echo "❌ Error: LocalStack is not running. Please start it with:"
+  echo "   docker run --rm -p 4566:4566 -p 4571:4571 localstack/localstack"
   exit 1
 else
-  echo "LocalStack detected at http://localhost:4566"
+  echo "🗂️ AWS LocalStack initialized at http://localhost:4566"
 fi
 
 # Check if port 3010 is already in use and release it
 if lsof -ti:3010 >/dev/null; then
-  echo "Port 3010 is already in use. Attempting to release it..."
-  lsof -ti:3010 | xargs kill -9
-  sleep 1
-  echo "Port released."
+  lsof -ti:3010 | xargs kill -9 > /dev/null 2>&1
 fi
 
 # Check if seed data script for AWS exists and run it
 if [ -f "script/storage/seedData.ts" ]; then
-  echo "→ Seeding AWS storage with sample data"
-  echo "# Seed AWS storage with sample data"
-  echo "# This will populate the following:"
-  echo "# - Accounts, apps, deployments, and packages"
-  echo "# - Deployment keys that match API requests"
-  npx ts-node script/storage/seedData.ts
+  echo "📂 Seeding AWS storage with sample data..."
+  npx ts-node script/storage/seedData.ts > /dev/null 2>&1
 else
-  echo "Warning: No AWS seed data script found at script/storage/seedData.ts"
-  echo "You may need to create this script or manually seed the data"
+  echo "❌ Warning: No AWS seed data script found at script/storage/seedData.ts"
+  exit 1
 fi
 
 # Build TypeScript before starting server
-echo "Building TypeScript files..."
-npm run build
+echo "🔨 Building application..."
+npm run build > /dev/null 2>&1
 
 # Start server with AWS configuration
-echo "Starting Code Push Server with AWS storage..."
-echo "Press Ctrl+C to stop and cleanup"
-npm start aws:env 
+echo "🛜 Starting server with AWS storage..."
+npm start aws:env > server.log 2>&1 &
+SERVER_PID=$!
+
+# Wait for server to be ready (checking if port 3010 is listening)
+echo "⏳ Waiting for server to be ready..."
+while ! lsof -i:3010 -sTCP:LISTEN >/dev/null 2>&1; do
+  sleep 1
+  # Check if server is still running
+  if ! kill -0 $SERVER_PID 2>/dev/null; then
+    echo "❌ Server failed to start. Check server.log for details."
+    exit 1
+  fi
+done
+
+echo "🚀 Server started with AWS storage"
+
+# Clean up before login
+echo "🧹 Cleaning environment before login..."
+npm run exec:clean > /dev/null 2>&1
+
+# Login using CLI
+echo "🔑 Logging in to CLI..."
+dota login http://localhost:3010 --accessKey=mock-google-token
+
+# Keep the script running
+echo "📝 Server log available at: $(pwd)/server.log"
+echo "⏹️  Press Ctrl+C to stop the server"
+wait $SERVER_PID

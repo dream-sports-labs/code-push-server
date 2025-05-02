@@ -2,17 +2,13 @@
 
 # Function to handle cleanup on exit
 cleanup() {
-  echo "Cleaning up..."
-  
   # Kill Azurite if it was started by this script
   if [ -n "$AZURITE_PID" ]; then
-    echo "Stopping Azurite (PID: $AZURITE_PID)..."
     kill $AZURITE_PID 2>/dev/null || true
   fi
   
   # Find and kill any process using port 3010
   lsof -ti:3010 | xargs kill -9 2>/dev/null || true
-  echo "Port 3010 has been released."
   exit 0
 }
 
@@ -21,14 +17,11 @@ trap cleanup SIGINT SIGTERM EXIT
 
 # Start Azurite in the background only if it's not already running
 if ! pgrep -f "azurite" > /dev/null; then
-  echo "Starting Azurite..."
-  npx azurite --silent &
+  echo "🗂️ Initializing Azure storage emulator..."
+  npx azurite --silent > /dev/null 2>&1 &
   AZURITE_PID=$!
-  # Give Azurite time to start
   sleep 2
-  echo "Azurite started."
 else
-  echo "Azurite is already running."
   AZURITE_PID=""
 fi
 
@@ -53,24 +46,43 @@ export NODE_ENV=development
 
 # Check if port 3010 is already in use and release it
 if lsof -ti:3010 >/dev/null; then
-  echo "Port 3010 is already in use. Attempting to release it..."
-  lsof -ti:3010 | xargs kill -9
-  sleep 1
-  echo "Port released."
+  lsof -ti:3010 | xargs kill -9 > /dev/null 2>&1
 fi
 
 # Seed Azurite storage with sample data
-echo "→ Seeding Azurite storage with sample data"
-echo "# Seed Azurite storage with sample data"
-echo "# This will populate the following:"
-echo "# - Accounts, apps, deployments, and packages"
-echo "# - Deployment keys that match API requests"
-npx ts-node script/storage/seedDataAzure.ts
+echo "📂 Seeding Azure storage with sample data..."
+npx ts-node script/storage/seedDataAzure.ts > /dev/null 2>&1
 
 # Build TypeScript before starting server
-echo "Building TypeScript files..."
-npm run build
+echo "🔨 Building application..."
+npm run build > /dev/null 2>&1
 
-echo "Starting Code Push Server with Azure storage..."
-echo "Press Ctrl+C to stop and cleanup"
-npm start azure:env 
+echo "🛜 Starting server with Azure storage..."
+npm start azure:env > server.log 2>&1 &
+SERVER_PID=$!
+
+# Wait for server to be ready (checking if port 3010 is listening)
+echo "⏳ Waiting for server to be ready..."
+while ! lsof -i:3010 -sTCP:LISTEN >/dev/null 2>&1; do
+  sleep 1
+  # Check if server is still running
+  if ! kill -0 $SERVER_PID 2>/dev/null; then
+    echo "❌ Server failed to start. Check server.log for details."
+    exit 1
+  fi
+done
+
+echo "🚀 Server started with Azure storage"
+
+# Clean up before login
+echo "🧹 Cleaning environment before login..."
+npm run exec:clean > /dev/null 2>&1
+
+# Login using CLI
+echo "🔑 Logging in to CLI..."
+dota login http://localhost:3010 --accessKey=mock-google-token
+
+# Keep the script running
+echo "📝 Server log available at: $(pwd)/server.log"
+echo "⏹️  Press Ctrl+C to stop the server"
+wait $SERVER_PID

@@ -10,11 +10,11 @@
     "lint": "npx eslint ./script/**/*.ts",
     "lint:fix": "npx eslint ./script/**/*.ts --fix",
     "debug": "node --inspect-brk ./bin/script/cli.js",
-    "exec:clean" : "npm install && npm run build  && npm install -g",
+    "exec:clean": "npm cache clean --force && rm -rf node_modules package-lock.json && npm install && npm run build && npm install -g .",
     "exec" : "npm run build && npm run build && npm install -g"
   },
   "bin": {
-    "dota-standalone": "./bin/script/cli.js"
+    "dota": "./bin/script/cli.js"
   },
   "repository": {
     "type": "git",

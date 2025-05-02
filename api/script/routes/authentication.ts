@@ -76,8 +76,10 @@ export class Authentication {
   public async authenticate(req: Request, res: Response, next: (err?: Error) => void) {
     // Bypass authentication in development mode
     if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
-      const token = req.headers.authorization?.split("Bearer ")[1];
-      
+      let token = req.headers.authorization?.split("Bearer ")[1];
+      if (token.startsWith("cli-")) 
+        // Handle CLI access with access key
+           token = req.headers.authorization.split("cli-")[1];
       // If token is provided, check if it's valid
       if (token) {
         try {
