@@ -74,17 +74,6 @@ export class Authentication {
 
   // Middleware to authenticate requests using Google ID token
   public async authenticate(req: Request, res: Response, next: (err?: Error) => void) {
-    // Special case for mock-google-token in development mode
-    if ((process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") && 
-        req.headers.authorization?.split("Bearer ")[1] === "mock-google-token") {
-      req.user = {
-        id: "id_0",
-        email: "default@example.com",
-        name: "Default User"
-      };
-      return next();
-    }
-
     // Bypass authentication in development mode
     if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
       const token = req.headers.authorization?.split("Bearer ")[1];

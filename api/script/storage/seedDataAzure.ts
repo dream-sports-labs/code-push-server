@@ -7,28 +7,46 @@ import {
 } from "@azure/data-tables";
 import { BlobServiceClient } from "@azure/storage-blob";
 
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const CONNECTION_STRING = "UseDevelopmentStorage=true";
 
-const account    = process.env.AZURE_STORAGE_ACCOUNT!;
-const accountKey = process.env.AZURE_STORAGE_ACCESS_KEY!;
-
-const tableEndpoint = `http://127.0.0.1:10002/${account}`;
-
-// use connection string for blob so emulator HTTP is allowed
-const blobServiceClient = BlobServiceClient.fromConnectionString(
-  "UseDevelopmentStorage=true"
-);
-
-const tableCred          = new AzureNamedKeyCredential(account, accountKey);
-const tableServiceClient = new TableServiceClient(
-  tableEndpoint,
-  tableCred,
-  { allowInsecureConnection: true }
-);
-
-// ─── SEED DATA ────────────────────────────────────────────────────────────────
+const tableServiceClient = TableServiceClient.fromConnectionString(CONNECTION_STRING);
+const blobServiceClient  = BlobServiceClient.fromConnectionString(CONNECTION_STRING);
 
 const seedData = {
+  storagev2: [
+    { partitionKey: "schema", rowKey: "version", value: "2" },
+    {
+      partitionKey: "deploymentKey O25dwjupnmTCC-q70qC1CzWfO73NkSR75brivk",
+      rowKey:       "",
+      appId:        "id_2",
+      deploymentId: "id_5",
+    },
+    {
+      partitionKey: "deploymentKey deployment_key_2",
+      rowKey:       "",
+      appId:        "id_3",
+      deploymentId: "id_6",
+    },
+    {
+      partitionKey: "accessKey mock-google-token",
+      rowKey:       "",
+      accountId:    "id_0",
+      expires:      (Date.now() + 365 * 24 * 60 * 60 * 1000).toString(),
+    },
+    {
+      partitionKey: "accountId id_0",
+      rowKey:       "accountId* id_0",
+      partitionKeyPointer: "email default@example.com",
+      rowKeyPointer:       "",
+    },
+    {
+      partitionKey: "email default@example.com",
+      rowKey:       "",
+      partitionKeyPointer: "accountId id_0",
+      rowKeyPointer:       "accountId* id_0",
+    },
+  ],
+
   accounts: [
     {
       partitionKey: "accountId id_0",
@@ -58,6 +76,7 @@ const seedData = {
       createdTime:  Date.now().toString(),
     },
   ],
+
   tenants: [
     {
       partitionKey: "Tenant",
@@ -72,6 +91,7 @@ const seedData = {
       createdBy:    "id_1",
     },
   ],
+
   apps: [
     {
       partitionKey: "App",
@@ -97,6 +117,7 @@ const seedData = {
       createdTime:  Date.now().toString(),
     },
   ],
+
   collaborators: [
     {
       partitionKey: "Collaborator",
@@ -117,6 +138,7 @@ const seedData = {
       role:         "Admin",
     },
   ],
+
   deployments: [
     {
       partitionKey: "Deployment",
@@ -137,39 +159,7 @@ const seedData = {
       createdTime:  "1731269070",
     },
   ],
-  deploymentKeyPointers: [
-    {
-      partitionKey: "deploymentKey O25dwjupnmTCC-q70qC1CzWfO73NkSR75brivk",
-      rowKey:       "",
-      appId:        "id_2",
-      deploymentId: "id_5",
-    },
-    {
-      partitionKey: "deploymentKey deployment_key_2",
-      rowKey:       "",
-      appId:        "id_3",
-      deploymentId: "id_6",
-    },
-    {
-      partitionKey: "accessKey mock-google-token",
-      rowKey:       "",
-      accountId:    "id_0",
-      expires:      (Date.now() + 365 * 24 * 60 * 60 * 1000).toString(),
-    },
-    {
-      partitionKey: "accountId id_0",
-      rowKey:       "accountId* id_0",
-      partitionKeyPointer: "email default@example.com",
-      rowKeyPointer:       "",
-    },
-    {
-      partitionKey: "email default@example.com",
-      rowKey:       "",
-      id:           "id_0",
-      email:        "default@example.com",
-      name:         "Default User",
-    },
-  ],
+
   packages: [
     {
       partitionKey: "Package",
@@ -247,6 +237,7 @@ const seedData = {
       rollout:      "100",
     },
   ],
+
   accessKeys: [
     {
       partitionKey: "AccessKey",
@@ -271,6 +262,7 @@ const seedData = {
       scope:        "all",
     },
   ],
+
   accessKeyNameToAccountIdMap: [
     {
       partitionKey: "accessKey accessKey1",
@@ -287,100 +279,53 @@ const seedData = {
   ],
 };
 
-// ─── TABLE SEEDING ────────────────────────────────────────────────────────────
-
-async function seedTable(tableName: string, entities: any[]): Promise<void> {
-  console.log(`→ Seeding table "${tableName}" (${entities.length} rows)`);
-  try {
-    await tableServiceClient.deleteTable(tableName);
-  } catch {}
-  await tableServiceClient.createTable(tableName);
-  const client = new TableClient(
-    tableEndpoint,
-    tableName,
-    tableCred,
-    { allowInsecureConnection: true }
-  );
-  for (const ent of entities) {
-    try {
-      await client.createEntity(ent);
-    } catch (e: any) {
-      if (e.code !== "EntityAlreadyExists") {
-        console.error(`  ✗ error inserting ${ent.rowKey}:`, e);
-      }
-    }
+async function seedTable(name: string, entities: any[]) {
+  try { await tableServiceClient.deleteTable(name); } catch {}
+  await tableServiceClient.createTable(name);
+  const client = TableClient.fromConnectionString(CONNECTION_STRING, name);
+  for (const e of entities) {
+    try { await client.createEntity(e); }
+    catch (err: any) { if (err.code !== "EntityAlreadyExists") console.error(err); }
   }
 }
 
-// ─── BLOB HISTORY SEEDING ─────────────────────────────────────────────────────
-
-async function seedHistoryBlobs(): Promise<void> {
-  console.log("→ Seeding blob history into container packagehistoryv1");
-  const containerClient = blobServiceClient.getContainerClient("packagehistoryv1");
-  await containerClient.createIfNotExists();
-  const historyMap = seedData.packages.reduce<Record<string, any[]>>((map, pkg) => {
-    (map[pkg.deploymentId] ||= []).push({
-      appVersion:     pkg.appVersion,
-      label:          pkg.label,
-      packageHash:    pkg.packageHash,
-      rollout:        Number(pkg.rollout),
-      isMandatory:    pkg.isMandatory === "true",
-      blobUrl:        pkg.blobUrl,
-      manifestBlobUrl: pkg.manifestBlobUrl,
-      size:           Number(pkg.size),
-      description:    pkg.description,
-      releasedBy:     pkg.releasedBy,
-      releaseMethod:  pkg.releaseMethod,
-      uploadTime:     Number(pkg.uploadTime),
-    });
-    return map;
-  }, {});
-  for (const [deploymentId, history] of Object.entries(historyMap)) {
-    const content = JSON.stringify(history);
-    await containerClient
-      .getBlockBlobClient(deploymentId)
-      .upload(content, Buffer.byteLength(content));
-    console.log(`  ✓ uploaded history for "${deploymentId}"`);
+async function seedHistoryBlobs() {
+  const container = blobServiceClient.getContainerClient("packagehistoryv1");
+  await container.createIfNotExists();
+  for (const pkg of seedData.packages) {
+    const history = seedData.packages
+      .filter(p => p.deploymentId === pkg.deploymentId)
+      .map(p => ({
+        appVersion:      p.appVersion,
+        label:           p.label,
+        packageHash:     p.packageHash,
+        rollout:         Number(p.rollout),
+        isMandatory:     p.isMandatory === "true",
+        blobUrl:         p.blobUrl,
+        manifestBlobUrl: p.manifestBlobUrl,
+        size:            Number(p.size),
+        description:     p.description,
+        releasedBy:      p.releasedBy,
+        releaseMethod:   p.releaseMethod,
+        uploadTime:      Number(p.uploadTime),
+      }));
+    await container
+      .getBlockBlobClient(pkg.deploymentId)
+      .upload(JSON.stringify(history), Buffer.byteLength(JSON.stringify(history)));
   }
 }
 
-// ─── MAIN ─────────────────────────────────────────────────────────────────────
-
-async function seedAll(): Promise<void> {
-  console.log("Creating and seeding all tables...");
-  const tables = [
-    "storagev2",
-    "accounts",
-    "tenants",
-    "apps",
-    "collaborators",
-    "deployments",
-    "packages",
-    "accessKeys",
-    "accessKeyNameToAccountIdMap",
-  ];
-  for (const name of tables) {
-    try { await tableServiceClient.createTable(name); } catch {}
+async function main() {
+  const tables = Object.keys(seedData) as Array<keyof typeof seedData>;
+  for (const t of tables) {
+    if (t === "storagev2") continue;
+    await seedTable(t, seedData[t]);
   }
-
-  await seedTable("storagev2", [
-    { partitionKey: "schema", rowKey: "version", value: "2" },
-    ...seedData.deploymentKeyPointers,
-  ]);
-  await seedTable("accounts",                         seedData.accounts);
-  await seedTable("tenants",                          seedData.tenants);
-  await seedTable("apps",                             seedData.apps);
-  await seedTable("collaborators",                    seedData.collaborators);
-  await seedTable("deployments",                      seedData.deployments);
-  await seedTable("packages",                         seedData.packages);
-  await seedTable("accessKeys",                       seedData.accessKeys);
-  await seedTable("accessKeyNameToAccountIdMap",      seedData.accessKeyNameToAccountIdMap);
-
+  await seedTable("storagev2", seedData.storagev2);
   await seedHistoryBlobs();
-  console.log("✅ All tables and history blobs seeded successfully");
 }
 
-seedAll().catch((err) => {
+main().catch(err => {
   console.error("❌ Seeding failed:", err);
   process.exit(1);
 });

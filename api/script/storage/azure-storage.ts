@@ -256,9 +256,14 @@ export class AzureStorage implements storage.Storage {
         return this.retrieveByKey(address.partitionKeyPointer, address.rowKeyPointer);
       })
       .then((pointer: Pointer) => {
+        if (!pointer) {
+          throw new Error(`Account not found for ID: ${accountId}`);
+        }
         return this.retrieveByKey(pointer.partitionKeyPointer, pointer.rowKeyPointer);
       })
-      .catch(AzureStorage.azureErrorHandler);
+      .catch((error) => {
+        throw AzureStorage.azureErrorHandler(error);
+      });
   }
 
   public getUserFromAccessKey(accessKey: string): Promise<storage.Account> {
@@ -1253,9 +1258,17 @@ export class AzureStorage implements storage.Storage {
   }
 
   private retrieveByKey(partitionKey: string, rowKey: string): any {
-    return this._tableClient.getEntity(partitionKey, rowKey).then((entity: any) => {
-      return this.unwrap(entity);
-    });
+    return this._tableClient.getEntity(partitionKey, rowKey).then(
+      (result) => {
+        return this.unwrap(result);
+      },
+      (error) => {
+        if (error && error.statusCode === 404) {
+          return null;
+        }
+        throw error;
+      }
+    );
   }
 
   private retrieveByAppHierarchy(appId: string, deploymentId?: string): Promise<any> {
