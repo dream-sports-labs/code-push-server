@@ -183,7 +183,6 @@ function managementTests(useJsonStorage?: boolean): void {
         assert.notEqual(response.accessKey.name, accessKey.name);
         assert(response.accessKey.expires > 0);
         assert.equal(response.accessKey.friendlyName, accessKeyRequest.friendlyName);
-        //assert.equal(response.accessKey.description, accessKeyRequest.friendlyName);
         GET(location, () => {
           done();
         });
