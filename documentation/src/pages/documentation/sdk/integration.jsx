@@ -13,7 +13,7 @@ export default function SDKIntegration() {
 
       <div className="mb-8">
         <p className="text-lg mb-4">
-          DeployPulse uses the CodePush client to deliver updates to your React Native app. Please
+          Dota uses the CodePush client to deliver updates to your React Native app. Please
           check the documentation for all details in regards to compatibility and installation.
         </p>
         <p className="text-lg">
@@ -56,8 +56,8 @@ export default function SDKIntegration() {
       <div className="mb-8" id="configure-environment">
         <h2 className="text-2xl font-bold mb-4">Configure environment</h2>
         <p className="text-lg mb-4">
-          Update your app to point to the DeployPulse server and use the CodePushDeploymentKey
-          generated from your DeployPulse account.
+          Update your app to point to the Dota server and use the CodePushDeploymentKey
+          generated from your Dota account.
         </p>
         <p className="text-lg mb-2">
           <strong>iOS:</strong> Update your Info.plist file with the following:
@@ -66,7 +66,7 @@ export default function SDKIntegration() {
           {`<key>CodePushDeploymentKey</key>
 <string>{{DEPLOYMENT_KEY_HERE}}</string>
 <key>CodePushServerURL</key>
-<string>https://apps.deploypulse.io/</string>`}
+<string>https://dota-server.yourdomain.com/</string>`}
         </pre>
         <p className="text-lg mb-2">
           <strong>Android:</strong> Update your strings.xml file with the following:
@@ -75,7 +75,7 @@ export default function SDKIntegration() {
           {`<resources>
     <string name="app_name">AppName</string>
     <string moduleConfig="true" name="CodePushDeploymentKey">{{DEPLOYMENT_KEY_HERE}}</string>
-    <string moduleConfig="true" name="CodePushServerUrl">https://apps.deploypulse.io/</string>
+    <string moduleConfig="true" name="CodePushServerUrl">https://dota-server.yourdomain.com/</string>
 </resources>`}
         </pre>
       </div>
