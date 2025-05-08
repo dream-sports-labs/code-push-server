@@ -1,5 +1,5 @@
 {
-  "name": "code-push-server",
+  "name": "dota",
   "version": "0.0.1",
   "description": "Source code for the CodePush service API",
   "main": "./script/server.js",
@@ -26,10 +26,6 @@
 
     "json:setup": "./runlocal.sh",
     "dev": "node -r dotenv/config ./runsetup.sh"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/microsoft/code-push-server"
   },
   "engines": {
     "node": ">=18.0.0",

@@ -84,13 +84,13 @@ export class PassportAuthentication {
           res
             .status(401)
             .send(
-              `The session or access key being used is invalid, please run "code-push-standalone login" again. If you are on an older version of the CLI, you may need to run "code-push-standalone logout" first to clear the session cache.`
+              `The session or access key being used is invalid, please run "dota-standalone login" again. If you are on an older version of the CLI, you may need to run "dota-standalone logout" first to clear the session cache.`
             );
         } else if (err.code === storage.ErrorCode.Expired) {
           res
             .status(401)
             .send(
-              `The session or access key being used has expired, please run "code-push-standalone login" again. If you are on an older version of the CLI, you may need to run "code-push-standalone logout" first to clear the session cache.`
+              `The session or access key being used has expired, please run "dota-standalone login" again. If you are on an older version of the CLI, you may need to run "dota-standalone logout" first to clear the session cache.`
             );
         } else {
           res.sendStatus(500);
@@ -107,11 +107,11 @@ export class PassportAuthentication {
     const router: Router = Router();
     const browserMessage: string =
       "Due to significant service improvements, your current CLI version is no longer supported." +
-      "<br/>Please upgrade to the latest version by running 'npm install -g code-push-cli@latest'." +
+      "<br/>Please upgrade to the latest version by running 'npm install -g dota-cli@latest'." +
       "<br/>Note that your end users will not be affected.";
     const cliMessage: string =
       "Due to significant service improvements, your current CLI version is no longer supported." +
-      "\nPlease upgrade to the latest version by running 'npm install -g code-push-cli@latest'." +
+      "\nPlease upgrade to the latest version by running 'npm install -g dota-cli@latest'." +
       "\nNote that your end users will not be affected.";
 
     // In legacy CLI's, all commands begin by passing through a /auth endpoint
@@ -302,7 +302,7 @@ export class PassportAuthentication {
         if (!emailAddress && providerName === PassportAuthentication.MICROSOFT_PROVIDER_NAME) {
           const message: string =
             "You've successfully signed in your Microsoft account, but we couldn't get an email address from it." +
-            "<br/>Please fill the basic information (i.e. First/Last name, Email address) for your Microsoft account in case of absence, then try to run 'code-push-standalone login' again.";
+            "<br/>Please fill the basic information (i.e. First/Last name, Email address) for your Microsoft account in case of absence, then try to run 'dota-standalone login' again.";
           restErrorUtils.sendForbiddenPage(res, message);
           return;
         } else if (!emailAddress) {

@@ -93,7 +93,7 @@ function createResponseUsingStorage(
       errorUtils.sendMalformedRequestError(
         res,
         "An update check must include a valid deployment key - please check that your app has been " +
-          "configured correctly. To view available deployment keys, run 'code-push-standalone deployment ls <appName> -k'."
+          "configured correctly. To view available deployment keys, run 'dota-standalone deployment ls <appName> -k'."
       );
     } else if (!validationUtils.isValidAppVersionField(updateRequest.appVersion)) {
       errorUtils.sendMalformedRequestError(

@@ -218,10 +218,10 @@ export class AppInsights {
       }
 
       if (restHeaders.getCliVersion(req)) {
-        tagProperties[AppInsights.ORIGIN_TAG] = "code-push-cli";
+        tagProperties[AppInsights.ORIGIN_TAG] = "dota-cli";
         tagProperties[AppInsights.ORIGIN_VERSION_TAG] = restHeaders.getCliVersion(req);
       } else if (restHeaders.getSdkVersion(req)) {
-        tagProperties[AppInsights.ORIGIN_TAG] = "code-push";
+        tagProperties[AppInsights.ORIGIN_TAG] = "dota";
         tagProperties[AppInsights.ORIGIN_VERSION_TAG] = restHeaders.getSdkVersion(req);
       } else {
         tagProperties[AppInsights.ORIGIN_TAG] = "Unknown";
