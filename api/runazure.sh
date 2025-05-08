@@ -76,6 +76,8 @@ echo "🚀 Server started with Azure storage"
 
 # Clean up before login
 echo "🧹 Cleaning environment before login..."
+pwd
+cd ../cli
 npm run exec:clean > /dev/null 2>&1
 
 # Login using CLI

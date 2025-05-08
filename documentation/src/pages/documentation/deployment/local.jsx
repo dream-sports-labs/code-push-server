@@ -272,6 +272,67 @@ cp .env.example .env</code>
             </div>
           </div>
         </div>
+
+        <h3 className="text-xl font-semibold mb-3">Local AWS Via LocalStack</h3>
+        <p className="mb-4">
+          For local development with AWS S3 using LocalStack, follow these steps:
+        </p>
+        <ol className="list-decimal pl-6 space-y-4 mb-6">
+          <li>
+            <p>Start the LocalStack container using Docker Compose:</p>
+            <pre className="code-block">
+              <code>docker-compose up -d localstack</code>
+            </pre>
+          </li>
+          <li>
+            <p>Set the following environment variables in your <code>.env</code> file:</p>
+            <pre className="code-block">
+              <code>STORAGE_PROVIDER=s3
+EMULATED=TRUE
+S3_BUCKET=your-dota-bucket
+S3_REGION=us-east-1
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+AWS_ENDPOINT=http://localhost:4566</code>
+            </pre>
+          </li>
+          <li>
+            <p>Run the AWS setup script to create the necessary resources:</p>
+            <pre className="code-block">
+              <code>npm run aws:setup</code>
+            </pre>
+          </li>
+          <li>
+            <p>Start the development server:</p>
+            <pre className="code-block">
+              <code>npm run dev</code>
+            </pre>
+          </li>
+        </ol>
+        <div className="alert-note mt-4 mb-6">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="alert-icon"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div className="alert-content">
+            <strong>Note:</strong>
+            <p>
+              LocalStack provides a fully functional local AWS cloud stack. This setup is ideal for development and testing without incurring AWS costs.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
