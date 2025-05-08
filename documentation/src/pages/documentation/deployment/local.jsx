@@ -57,10 +57,11 @@ export default function LocalDeployment() {
           <li>
             <p>
               Copy the <code>.env.example</code> file to a new file named <code>.env</code> in the
-              root directory:
+              api directory:
             </p>
             <pre className="code-block">
-              <code>cp .env.example .env</code>
+              <code>cd api
+cp .env.example .env</code>
             </pre>
             <p className="mt-2">
               Fill in the values for each environment variable in the <code>.env</code> file

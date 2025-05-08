@@ -16,7 +16,7 @@ export default function EnvironmentConfig() {
           </svg>
           <div className="alert-content">
             <strong>Note:</strong>
-            <p>You can create a <code>.env</code> file in the root directory of your DOTA Server by copying the <code>.env.example</code> file and filling in the values according to your environment.</p>
+            <p>You can create a <code>.env</code> file in the api directory of your DOTA Server by copying the <code>.env.example</code> file and filling in the values according to your environment.</p>
           </div>
         </div>
       </div>

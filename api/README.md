@@ -21,8 +21,9 @@ To run the DOTA Server locally, follow these steps:
 
 1. Clone the repository to your local machine.
 
-2. Copy the `.env.example` file to a new file named `.env` in the root directory:
+2. Copy the `.env.example` file to a new file named `.env` in the api directory:
    ````bash
+   cd api
    cp .env.example .env
    ````
    Fill in the values for each environment variable in the `.env` file according to your development or production setup.

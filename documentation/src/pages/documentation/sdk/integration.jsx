@@ -18,7 +18,17 @@ export default function SDKIntegration() {
         </p>
         <p className="text-lg">
           <strong>NOTE:</strong> If you are utilizing the new React Native architecture introduced
-          by default in 0.76, please use the newer client found <a href="#">here</a>.
+          by default in 0.76 or using React Native version 0.77 or higher, you need to use the new CodePush client with the following requirements:
+          <ul className="list-disc pl-6 mt-2">
+            <li>React Native version 0.77 or higher</li>
+            <li>iOS minimum target version of 15.5</li>
+          </ul>
+          <div className="mt-2">
+            <strong>Install the new CodePush client:</strong>
+            <pre className="code-block mt-2">
+              <code>npm install --save @code-push-next/react-native-code-push</code>
+            </pre>
+          </div>
         </p>
       </div>
 

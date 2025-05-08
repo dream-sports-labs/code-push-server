@@ -126,7 +126,8 @@ cd dota-server
 # Install dependencies
 npm install
 
-# Create .env file
+# Create .env file in api directory
+cd api
 cp .env.example .env
 nano .env  # Edit with your configuration`}</code>
             </pre>
