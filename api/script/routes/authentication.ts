@@ -76,16 +76,42 @@ export class Authentication {
   public async authenticate(req: Request, res: Response, next: (err?: Error) => void) {
     // Bypass authentication in development mode
     if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
-      if (req.body.user === undefined) {
-        req.user = {
-          id: "id_0",
-          email: "user1@example.com",
-          name: "User One",
-        };
+      let token = req.headers.authorization?.split("Bearer ")[1];
+      if (token.startsWith("cli-")) 
+        // Handle CLI access with access key
+           token = req.headers.authorization.split("cli-")[1];
+      // If token is provided, check if it's valid
+      if (token) {
+        try {
+          // Use the storage mechanism to look up the token, just like in production
+          const user = await this._storageInstance.getUserFromAccessToken(token);
+          if (user) {
+            req.user = user;
+            return next();
+          } else {
+            // For expired or invalid tokens, return 401
+            return res.status(401).send("Access key has expired or is invalid");
+          }
+        } catch (error) {
+          // If there's an error looking up the token, return 401
+          return res.status(401).send("Invalid Access token");
+        }
       } else {
-        req.user = req.headers.userId;
+        const userId = Array.isArray(req.headers.userid) ? req.headers.userid[0] : req.headers.userid;
+        if (userId) {
+            const user = await this.getUserById(userId);
+            if (user) {
+                req.user = {
+                  id: userId
+                };
+                return next();
+            } else {
+                return res.status(401).send("User not found");    
+            }
+        } else {
+            return res.status(401).send("Missing token and userid");
+        }
       }
-      return next();
     }
 
     // In production, validate the Google ID token
@@ -106,51 +132,49 @@ export class Authentication {
         } else {
             return res.status(401).send("Missing Google ID token");
         }
-        
-    }
+      }
 
-    if (idToken.startsWith("cli-")) {
-      // Handle CLI access with access key
-        const accessToken = idToken.split("cli-")[1];
-        const user = await this._storageInstance.getUserFromAccessToken(accessToken);
-        if(user) {
-          req.user = { id: user.id };
-          return next();
-        } else {
-          return res.status(401).send("Authentication failed by access key");
-        }
-    } else {
-
-        // Verify Google ID token
-        const payload = await this.verifyGoogleToken(idToken);
-        if (!payload) {
-          return res.status(401).send("Invalid Google ID token");
-        }
-
-        // Check user exists in the storage
-        const userEmail = payload.email;
-
-        const user = await this.getOrCreateUser(payload);
-
-        if (!user) {
-          return res.status(401).send("User not found in the system");
-        } else {
-          // Update user info if it has changed
-          if (user.name !== payload.name) {
-            user.name = payload.name;
-            await this._storageInstance.addAccount(user);
-            //return this._storageInstance
-            // .addAccount(newUser)
-            // .then((accountId: string): Promise<void> => issueAccessKey(accountId));
+      if (idToken.startsWith("cli-")) {
+        // Handle CLI access with access key
+          const accessToken = idToken.split("cli-")[1];
+          const user = await this._storageInstance.getUserFromAccessToken(accessToken);
+          if(user) {
+            req.user = { id: user.id };
+            return next();
+          } else {
+            return res.status(401).send("Authentication failed by access key");
           }
-        }
+      } else {
 
-        // Attach the user to the request object
-        req.user = user;
-        next();
-    }
+          // Verify Google ID token
+          const payload = await this.verifyGoogleToken(idToken);
+          if (!payload) {
+            return res.status(401).send("Invalid Google ID token");
+          }
 
-     
+          // Check user exists in the storage
+          const userEmail = payload.email;
+
+          const user = await this.getOrCreateUser(payload);
+
+          if (!user) {
+            return res.status(401).send("User not found in the system");
+          } else {
+            // Update user info if it has changed
+            if (user.name !== payload.name) {
+              user.name = payload.name;
+              await this._storageInstance.addAccount(user);
+              //return this._storageInstance
+              // .addAccount(newUser)
+              // .then((accountId: string): Promise<void> => issueAccessKey(accountId));
+            }
+          }
+
+          // Attach the user to the request object
+          req.user = user;
+          next();
+      }
+
     } catch (error) {
       res.status(401).send("Authentication failed");
     }

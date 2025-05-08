@@ -8,7 +8,7 @@ const sequelize = new Sequelize("codepushdb", "root", "root", {
 });
 
 // Seed data
-const seedData = {
+export const seedData = {
   accounts: [
     { id: "id_0", email: "user1@example.com", name: "User One", createdTime: new Date().getTime() },
     { id: "id_1", email: "user2@example.com", name: "User Two", createdTime: new Date().getTime() },
@@ -125,6 +125,16 @@ const seedData = {
       expires: 1735689600000,
       scope: "all",
     },
+    {
+      id: "mock_token_key",
+      name: "mock-google-token",
+      accountId: "id_0",
+      createdBy: "admin",
+      createdTime: new Date().getTime(),
+      friendlyName: "Mock Google Token for Development",
+      expires: Date.now() + (365 * 24 * 60 * 60 * 1000), // One year from now
+      scope: "all",
+    }
   ],
 };
 
@@ -133,31 +143,62 @@ async function seed() {
   try {
     // Initialize models
     const models = createModelss(sequelize);
-    // // Sync database
-    // await sequelize.sync({ force: true });
+    // Sync database
     await sequelize.sync({ alter: true }); // Alters tables without dropping them
 
+    // Insert seed data with upsert operations to avoid duplicate key errors
+    console.log("Seeding accounts...");
+    for (const account of seedData.accounts) {
+      await models.Account.upsert(account);
+    }
 
-    // // Insert seed data in order
-    await models.Account.bulkCreate(seedData.accounts);
-    await models.Tenant.bulkCreate(seedData.tenants);
-    await models.App.bulkCreate(seedData.apps);
+    console.log("Seeding tenants...");
+    for (const tenant of seedData.tenants) {
+      await models.Tenant.upsert(tenant);
+    }
+
+    console.log("Seeding apps...");
+    for (const app of seedData.apps) {
+      await models.App.upsert(app);
+    }
+
+    console.log("Seeding collaborators...");
+    // For collaborators, we'll delete existing ones first (since they have composite keys)
+    await models.Collaborator.destroy({
+      where: {
+        appId: seedData.apps.map(app => app.id)
+      }
+    });
     await models.Collaborator.bulkCreate(seedData.collaborators);
-        // Insert deployments with `currentPackageId` temporarily set to `null`
-    await models.Deployment.bulkCreate(seedData.deployments.map((deployment) => ({
-          ...deployment,
-          packageId: null, // Temporarily set to null to break circular dependency
-    })));
-    await models.Package.bulkCreate(seedData.packages);
-    await Promise.all(seedData.deployments.map(async (deployment) => {
+
+    console.log("Seeding deployments...");
+    for (const deployment of seedData.deployments) {
+      await models.Deployment.upsert({
+        ...deployment,
+        packageId: null // Temporarily set to null to break circular dependency
+      });
+    }
+
+    console.log("Seeding packages...");
+    for (const pkg of seedData.packages) {
+      await models.Package.upsert(pkg);
+    }
+
+    console.log("Updating deployment package references...");
+    // Update the package references for deployments
+    for (const deployment of seedData.deployments) {
       if (deployment.packageId) {
         await models.Deployment.update(
           { packageId: deployment.packageId },
           { where: { id: deployment.id } }
         );
       }
-    }));
-    await models.AccessKey.bulkCreate(seedData.accessKeys);
+    }
+
+    console.log("Seeding access keys...");
+    for (const accessKey of seedData.accessKeys) {
+      await models.AccessKey.upsert(accessKey);
+    }
 
     console.log("Seed data has been inserted successfully.");
   } catch (error) {

@@ -5,11 +5,12 @@ import * as express from "express";
 import * as fs from "fs";
 import * as http from "http";
 import * as stream from "stream";
+import * as path from "path";
 
 import * as storage from "./storage";
 
 import clone = storage.clone;
-import { isPrototypePollutionKey } from "./storage";
+import { AccessKey, isPrototypePollutionKey } from "./storage";
 
 function merge(original: any, updates: any): void {
   for (const property in updates) {
@@ -69,11 +70,12 @@ export class JsonStorage implements storage.Storage {
 
   private loadStateAsync(): void {
     if (this.disablePersistence) return;
-    console.log(__dirname)
-    let pathName = __dirname + "/JsonStorage.json";
+    
+    // Use environment variable if set, otherwise use the default path
+    let pathName = process.env.LOCAL_STORAGE_PATH || path.join(__dirname, "JsonStorage.json");
         
     fs.access(pathName, fs.constants.F_OK, (err) => {
-            //console.log(err ? "File does not exist" : "File exists");
+            console.log(err ? "File does not exist" : "File exists");
     });
     fs.exists(
       pathName,
@@ -399,6 +401,8 @@ export class JsonStorage implements storage.Storage {
   public getUserFromAccessToken(accessToken: string): Promise<storage.Account> {
     return this.getAccountIdFromAccessKey(accessToken).then((accountId: string) => {
       return this.getAccount(accountId);
+    }).catch(error => {
+      throw error;
     });
   }
 
@@ -846,5 +850,18 @@ export class JsonStorage implements storage.Storage {
 
   private static getRejectedPromise(errorCode: storage.ErrorCode, message?: string): Promise<any> {
     return Promise.reject(storage.storageError(errorCode, message));
+  }
+
+  public isAccessKeyValid(keyName: string): Promise<boolean> {
+    const accessKeyInfo = this.accessKeyNameToAccountIdMap[keyName];
+    if (!accessKeyInfo) {
+      return Promise.resolve(false);
+    }
+    
+    if (accessKeyInfo.expires && accessKeyInfo.expires < Date.now()) {
+      return Promise.resolve(false);
+    }
+    
+    return Promise.resolve(true);
   }
 }

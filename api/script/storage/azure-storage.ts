@@ -181,6 +181,7 @@ export class AzureStorage implements storage.Storage {
   private _setupPromise: Promise<void>;
 
   public constructor(accountName?: string, accountKey?: string) {
+    
     shortid.characters("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-");
 
     this._setupPromise = this.setup(accountName, accountKey);
@@ -255,9 +256,14 @@ export class AzureStorage implements storage.Storage {
         return this.retrieveByKey(address.partitionKeyPointer, address.rowKeyPointer);
       })
       .then((pointer: Pointer) => {
+        if (!pointer) {
+          throw new Error(`Account not found for ID: ${accountId}`);
+        }
         return this.retrieveByKey(pointer.partitionKeyPointer, pointer.rowKeyPointer);
       })
-      .catch(AzureStorage.azureErrorHandler);
+      .catch((error) => {
+        throw AzureStorage.azureErrorHandler(error);
+      });
   }
 
   public getUserFromAccessKey(accessKey: string): Promise<storage.Account> {
@@ -273,14 +279,25 @@ export class AzureStorage implements storage.Storage {
   }
 
   public getUserFromAccessToken(accessToken: string): Promise<storage.Account> {
-    const partitionKey: string = Keys.getShortcutAccessKeyPartitionKey(accessToken);
+    // Create partition key without hashing the token in development mode
+    const useHashedKey = process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
+    const partitionKey: string = Keys.getShortcutAccessKeyPartitionKey(accessToken, useHashedKey);
     const rowKey: string = "";
 
     return this._setupPromise
       .then(() => {
         return this.retrieveByKey(partitionKey, rowKey);
       })
-      .catch(AzureStorage.azureErrorHandler);
+      .then(async (accessKeyPointer: AccessKeyPointer) => {    
+        if (!accessKeyPointer) {
+          throw new Error("Access key not found");
+        }
+        return this.getAccount(accessKeyPointer.accountId);
+      })
+      .catch((error: any) => {
+        console.error("Error retrieving account:", error);
+        throw error;
+      });
   }
 
   public getAccountByEmail(email: string): Promise<storage.Account> {
@@ -317,21 +334,29 @@ export class AzureStorage implements storage.Storage {
   }
 
   public getAccountIdFromAccessKey(accessKey: string): Promise<string> {
-    const partitionKey: string = Keys.getShortcutAccessKeyPartitionKey(accessKey);
+    // Don't hash the key in development mode
+    const useHashedKey = process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
+    const partitionKey: string = Keys.getShortcutAccessKeyPartitionKey(accessKey, useHashedKey);
     const rowKey: string = "";
-
+    
     return this._setupPromise
       .then(() => {
         return this.retrieveByKey(partitionKey, rowKey);
       })
       .then((accountIdObject: AccessKeyPointer) => {
+        if (!accountIdObject) {
+          throw storage.storageError(storage.ErrorCode.NotFound, "Access key not found");
+        }
+        
         if (new Date().getTime() >= accountIdObject.expires) {
           throw storage.storageError(storage.ErrorCode.Expired, "The access key has expired.");
         }
 
         return accountIdObject.accountId;
       })
-      .catch(AzureStorage.azureErrorHandler);
+      .catch((error) => {
+        throw AzureStorage.azureErrorHandler(error);
+      });
   }
 
   public getTenants(accountId: string): Promise<storage.Organization[]> {
@@ -917,6 +942,16 @@ export class AzureStorage implements storage.Storage {
     return Promise.resolve(<void>null);
   }
 
+  public isAccessKeyValid(accessKey: string): Promise<boolean> {
+    return this.getAccountIdFromAccessKey(accessKey)
+      .then(() => true)
+      .catch(error => {
+        if (error.code === "Expired") {
+          return false;
+        }
+        return false;
+      });
+  }
   private setup(accountName?: string, accountKey?: string): Promise<void> {
     let tableServiceClient: TableServiceClient;
     let tableClient: TableClient;
@@ -983,7 +1018,7 @@ export class AzureStorage implements storage.Storage {
         this._blobService = blobServiceClient;
       })
       .catch((error) => {
-        if (error.code == "ContainerAlreadyExists") {
+        if (error.code === "ContainerAlreadyExists") {
           this._tableClient = tableClient;
           this._blobService = blobServiceClient;
         } else {
@@ -1223,9 +1258,17 @@ export class AzureStorage implements storage.Storage {
   }
 
   private retrieveByKey(partitionKey: string, rowKey: string): any {
-    return this._tableClient.getEntity(partitionKey, rowKey).then((entity: any) => {
-      return this.unwrap(entity);
-    });
+    return this._tableClient.getEntity(partitionKey, rowKey).then(
+      (result) => {
+        return this.unwrap(result);
+      },
+      (error) => {
+        if (error && error.statusCode === 404) {
+          return null;
+        }
+        throw error;
+      }
+    );
   }
 
   private retrieveByAppHierarchy(appId: string, deploymentId?: string): Promise<any> {
@@ -1502,7 +1545,7 @@ export class AzureStorage implements storage.Storage {
       errorMessage = azureError.message;
     }
 
-    if (overrideMessage && overrideCondition == errorCodeRaw) {
+     if (overrideMessage && overrideCondition === errorCodeRaw) {
       errorMessage = overrideValue;
     }
 

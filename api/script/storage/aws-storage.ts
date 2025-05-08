@@ -247,7 +247,6 @@ export function createModelss(sequelize: Sequelize) {
   Deployment.belongsTo(App, { foreignKey: 'appId' });
 
   // Deployment and Package (One Package can be linked to many Deployments)
-  //
   Deployment.hasMany(Package, { foreignKey: 'deploymentId', as: 'packageHistory' });
   Package.belongsTo(Deployment, { foreignKey: 'deploymentId' });
   Deployment.belongsTo(Package, { foreignKey: 'packageId', as: 'packageDetails' });
@@ -304,6 +303,7 @@ export class S3Storage implements storage.Storage {
     private sequelize:Sequelize;
     private setupPromise: Promise<void>;
     public constructor() {
+        
         this.s3 = new S3({
           endpoint: process.env.S3_ENDPOINT, // LocalStack S3 endpoint
           s3ForcePathStyle: true,
@@ -1794,7 +1794,7 @@ export class S3Storage implements storage.Storage {
         errorMessage = azureError.message;
       }
   
-      if (overrideMessage && overrideCondition == errorCodeRaw) {
+      if (overrideMessage && overrideCondition === errorCodeRaw) {
         errorMessage = overrideValue;
       }
   
@@ -1843,5 +1843,30 @@ export class S3Storage implements storage.Storage {
       }
   
       return null;
+    }
+
+    public isAccessKeyValid(accessKey: string): Promise<boolean> {
+      return this.setupPromise
+        .then(() => {
+          // Find the access key in the database
+          return this.sequelize.models[MODELS.ACCESSKEY].findOne({
+            where: { name: accessKey }
+          });
+        })
+        .then((accessKeyRecord) => {
+          if (!accessKeyRecord) {
+            return false;
+          }
+          
+          // Check if the key has expired
+          if (accessKeyRecord.dataValues.expires && accessKeyRecord.dataValues.expires < Date.now()) {
+            return false;
+          }
+          
+          return true;
+        })
+        .catch(() => {
+          return false;
+        });
     }
   }

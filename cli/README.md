@@ -1,54 +1,54 @@
-# CodePush CLI
+# DOTA CLI
 
-The CodePush CLI is a Node.js application that allows users to interact with CodePush Server.
+The DOTA CLI is a Node.js application that allows users to interact with DOTA Server.
 
 ## Installation
 
-To run the CodePush CLI, follow these steps:
+To run the DOTA CLI, follow these steps:
 
-1. Clone the CodePush Service repository.
+1. Clone the repository.
 1. Install the necessary dependencies by running `npm install`.
 1. Build the CLI by running `npm run build`.
 1. Install CLI globally by running `npm install -g`.
 
 ## Getting started
 
-1. Create a [CodePush account](#account-creation) push using the CodePush CLI.
-1. Register your app with CodePush, and optionally share it with other developers on your team.
-1. CodePush-ify your app and point it at the deployment you wish to use.
+1. Create a [DOTA account](#account-creation) push using the DOTA CLI.
+1. Register your app with DOTA, and optionally share it with other developers on your team.
+1. DOTA-ify your app and point it at the deployment you wish to use.
 1. Release an update for your app.
 1. Check out the debug logs to ensure everything is working as expected.
 
 ## Usage
 
-After installing CodePush CLI globally, it will be available under `code-push-standalone`.
+After installing DOTA CLI globally, it will be available under `dota`.
 
 ## Account Management
 
-Before you can begin releasing app updates, you need to create a CodePush account. You can do this by simply running the following command once you've installed the CLI:
+Before you can begin releasing app updates, you need to create a DOTA account. You can do this by simply running the following command once you've installed the CLI:
 
 ```
-code-push-standalone register <optional: server-url>
+dota register <optional: server-url>
 ```
 
-This will launch a browser, asking you to authenticate with either your GitHub or Microsoft account. Once authenticated, it will create a CodePush account "linked" to your GitHub/MSA identity, and generate an access key you can copy/paste into the CLI in order to login.
+This will launch a browser, asking you to authenticate with either your GitHub or Microsoft account. Once authenticated, it will create a DOTA account "linked" to your GitHub/MSA identity, and generate an access key you can copy/paste into the CLI in order to login.
 
 _Note: After registering, you are automatically logged-in with the CLI, so until you explicitly log out, you don't need to login again from the same machine._
 
 If you have an existing account, you may also link your account to another identity provider (e.g. Microsoft, GitHub) by running:
 
 ```
-code-push-standalone link
+dota link
 ```
 
 _Note: In order to link multiple accounts, the email address associated with each provider must match._
 
 ### Authentication
 
-Most commands within the CodePush CLI require authentication, and therefore, before you can begin managing your account, you need to login using the GitHub or Microsoft account you used when registering. You can do this by running the following command:
+Most commands within the DOTA CLI require authentication, and therefore, before you can begin managing your account, you need to login using the GitHub or Microsoft account you used when registering. You can do this by running the following command:
 
 ```shell
-code-push-standalone login <optional: server-url>
+dota login <optional: server-url>
 ```
 
 This will launch a browser, asking you to authenticate with either your GitHub or Microsoft account. This will generate an access key that you need to copy/paste into the CLI (it will prompt you for it). You are now successfully authenticated and can safely close your browser window.
@@ -56,28 +56,28 @@ This will launch a browser, asking you to authenticate with either your GitHub o
 If at any time you want to determine if you're already logged in, you can run the following command to display the e-mail address associated with your current authentication session, which identity providers your account is linked to (e.g. GitHub):
 
 ```shell
-code-push-standalone whoami
+dota whoami
 ```
 
 When you login from the CLI, your access key is persisted to disk for the duration of your session so that you don't have to login every time you attempt to access your account. In order to end your session and delete this access key, simply run the following command:
 
 ```shell
-code-push-standalone logout
+dota logout
 ```
 
 If you forget to logout from a machine you'd prefer not to leave a running session on (e.g. your friend's laptop), you can use the following commands to list and remove any current login sessions.
 
 ```shell
-code-push-standalone session ls
-code-push-standalone session rm <machineName>
+dota session ls
+dota session rm <machineName>
 ```
 
 ### Access Keys
 
-If you need to be able to authenticate against the CodePush service without launching a browser and/or without needing to use your GitHub and/or Microsoft credentials (e.g. in a CI environment), you can run the following command to create an "access key" (along with a name describing what it is for):
+If you need to be able to authenticate against the DOTA service without launching a browser and/or without needing to use your GitHub and/or Microsoft credentials (e.g. in a CI environment), you can run the following command to create an "access key" (along with a name describing what it is for):
 
 ```shell
-code-push-standalone access-key add "VSTS Integration"
+dota access-key add "VSTS Integration"
 ```
 
 By default, access keys expire in 60 days. You can specify a different expiry duration by using the `--ttl` option and passing in a [human readable duration string](https://github.com/jkroso/parse-duration#parsestr) (e.g. "2d" => 2 days, "1h 15 min" => 1 hour and 15 minutes). For security, the key will only be shown once on creation, so remember to save it somewhere if needed!
@@ -85,42 +85,42 @@ By default, access keys expire in 60 days. You can specify a different expiry du
 After creating the new key, you can specify its value using the `--accessKey` flag of the `login` command, which allows you to perform "headless" authentication, as opposed to launching a browser.
 
 ```shell
-code-push-standalone login --accessKey <accessKey>
+dota login --accessKey <accessKey>
 ```
 
-When logging in via this method, the access key will not be automatically invalidated on logout, and can be used in future sessions until it is explicitly removed from the CodePush server or expires. However, it is still recommended that you log out once your session is complete, in order to remove your credentials from disk.
+When logging in via this method, the access key will not be automatically invalidated on logout, and can be used in future sessions until it is explicitly removed from the DOTA server or expires. However, it is still recommended that you log out once your session is complete, in order to remove your credentials from disk.
 
 Finally, if at any point you need to change a key's name and/or expiration date, you can use the following command:
 
 ```shell
-code-push-standalone access-key patch <accessKeyName> --name "new name" --ttl 10d
+dota access-key patch <accessKeyName> --name "new name" --ttl 10d
 ```
 
 _NOTE: When patching the TTL of an existing access key, its expiration date will be set relative to the current time, with no regard for its previous value._
 
 ## App Management
 
-Before you can deploy any updates, you need to register an app with the CodePush service using the following command:
+Before you can deploy any updates, you need to register an app with the DOTA service using the following command:
 
 ```
-code-push-standalone app add <appName>
+dota app add <appName>
 ```
 
-If your app targets both iOS and Android, please _create separate apps for each platform_ with CodePush (see the note below for details). This way, you can manage and release updates to them separately, which in the long run, also tends to make things simpler. The naming convention that most folks use is to suffix the app name with `-iOS` and `-Android`. For example:
+If your app targets both iOS and Android, please _create separate apps for each platform_ with DOTA (see the note below for details). This way, you can manage and release updates to them separately, which in the long run, also tends to make things simpler. The naming convention that most folks use is to suffix the app name with `-iOS` and `-Android`. For example:
 
 ```
-code-push-standalone app add MyApp-Android
-code-push-standalone app add MyApp-iOS
+dota app add MyApp-Android
+dota app add MyApp-iOS
 ```
 
-_NOTE: Using the same app for iOS and Android may cause installation exceptions because the CodePush update package produced for iOS will have different content from the update produced for Android._
+_NOTE: Using the same app for iOS and Android may cause installation exceptions because the DOTA update package produced for iOS will have different content from the update produced for Android._
 
 All new apps automatically come with two deployments (`Staging` and `Production`) so that you can begin distributing updates to multiple channels without needing to do anything extra (see deployment instructions below). After you create an app, the CLI will output the deployment keys for the `Staging` and `Production` deployments, which you can begin using to configure your mobile clients with the [React Native](http://github.com/Microsoft/react-native-code-push) SDK.
 
 If you decide that you don't like the name you gave to an app, you can rename it at any time using the following command:
 
 ```
-code-push-standalone app rename <appName> <newAppName>
+dota app rename <appName> <newAppName>
 ```
 
 The app's name is only meant to be recognizable from the management side, and therefore, you can feel free to rename it as necessary. It won't actually impact the running app, since update queries are made via deployment keys.
@@ -128,27 +128,27 @@ The app's name is only meant to be recognizable from the management side, and th
 If at some point you no longer need an app, you can remove it from the server using the following command:
 
 ```
-code-push-standalone app rm <appName>
+dota app rm <appName>
 ```
 
 Do this with caution since any apps that have been configured to use it will obviously stop receiving updates.
 
-Finally, if you want to list all apps that you've registered with the CodePush server,
+Finally, if you want to list all apps that you've registered with the DOTA server,
 you can run the following command:
 
 ```
-code-push-standalone app ls
+dota app ls
 ```
 
 ### App Collaboration
 
-If you will be working with other developers on the same CodePush app, you can add them as collaborators using the following command:
+If you will be working with other developers on the same DOTA app, you can add them as collaborators using the following command:
 
 ```shell
-code-push-standalone collaborator add <appName> <collaboratorEmail>
+dota collaborator add <appName> <collaboratorEmail>
 ```
 
-_NOTE: This expects the developer to have already [registered](#account-creation) with CodePush using the specified e-mail address, so ensure that they have done that before attempting to share the app with them._
+_NOTE: This expects the developer to have already [registered](#account-creation) with DOTA using the specified e-mail address, so ensure that they have done that before attempting to share the app with them._
 
 Once added, all collaborators will immediately have the following permissions with regards to the newly shared app:
 
@@ -171,56 +171,56 @@ _NOTE: A developer can remove him/herself as a collaborator from an app that was
 Over time, if someone is no longer working on an app with you, you can remove them as a collaborator using the following command:
 
 ```shell
-code-push-standalone collaborator rm <appName> <collaboratorEmail>
+dota collaborator rm <appName> <collaboratorEmail>
 ```
 
 If at any time you want to list all collaborators that have been added to an app, you can simply run the following command:
 
 ```shell
-code-push-standalone collaborator ls <appName>
+dota collaborator ls <appName>
 ```
 
 Finally, if at some point, you (as the app owner) will no longer be working on the app, and you want to transfer it to another developer (or a client), you can run the following command:
 
 ```shell
-code-push-standalone app transfer <appName> <newOwnerEmail>
+dota app transfer <appName> <newOwnerEmail>
 ```
 
-_NOTE: Just like with the `code-push-standalone collaborator add` command, this expects that the new owner has already registered with CodePush using the specified e-mail address._
+_NOTE: Just like with the `dota collaborator add` command, this expects that the new owner has already registered with DOTA using the specified e-mail address._
 
-Once confirmed, the specified developer becomes the app's owner and immediately receives the permissions associated with that role. Besides the transfer of ownership, nothing else about the app is modified (e.g. deployments, release history, collaborators). This means that you will still be a collaborator of the app, and therefore, if you want to remove yourself, you simply need to run the `code-push-standalone collaborator rm` command after successfully transferring ownership.
+Once confirmed, the specified developer becomes the app's owner and immediately receives the permissions associated with that role. Besides the transfer of ownership, nothing else about the app is modified (e.g. deployments, release history, collaborators). This means that you will still be a collaborator of the app, and therefore, if you want to remove yourself, you simply need to run the `dota collaborator rm` command after successfully transferring ownership.
 
 ### Deployment Management
 
-From the CodePush perspective, an app is simply a named grouping for one or more things called "deployments". While the app represents a conceptual "namespace" or "scope" for a platform-specific version of an app (e.g. the iOS port of Foo app), its deployments represent the actual target for releasing updates (for developers) and synchronizing updates (for end-users). Deployments allow you to have multiple "environments" for each app in-flight at any given time, and help model the reality that apps typically move from a dev's personal environment to a testing/QA/staging environment, before finally making their way into production.
+From the DOTA perspective, an app is simply a named grouping for one or more things called "deployments". While the app represents a conceptual "namespace" or "scope" for a platform-specific version of an app (e.g. the iOS port of Foo app), its deployments represent the actual target for releasing updates (for developers) and synchronizing updates (for end-users). Deployments allow you to have multiple "environments" for each app in-flight at any given time, and help model the reality that apps typically move from a dev's personal environment to a testing/QA/staging environment, before finally making their way into production.
 
 _NOTE: As you'll see below, the `release`, `promote` and `rollback` commands require both an app name and a deployment name is order to work, because it is the combination of the two that uniquely identifies a point of distribution (e.g. I want to release an update of my iOS app to my beta testers)._
 
-Whenever an app is registered with the CodePush service, it includes two deployments by default: `Staging` and `Production`. This allows you to immediately begin releasing updates to an internal environment, where you can thoroughly test each update before pushing them out to your end-users. This workflow is critical for ensuring your releases are ready for mass-consumption, and is a practice that has been established in the web for a long time.
+Whenever an app is registered with the DOTA service, it includes two deployments by default: `Staging` and `Production`. This allows you to immediately begin releasing updates to an internal environment, where you can thoroughly test each update before pushing them out to your end-users. This workflow is critical for ensuring your releases are ready for mass-consumption, and is a practice that has been established in the web for a long time.
 
 If having a staging and production version of your app is enough to meet your needs, then you don't need to do anything else. However, if you want an alpha, dev, etc. deployment, you can easily create them using the following command:
 
 ```
-code-push-standalone deployment add <appName> <deploymentName>
+dota deployment add <appName> <deploymentName>
 ```
 
 If you want to re-use an existing deployment key, you can do this with:
 
 ```
-code-push-standalone deployment add <appName> <deploymentName> -k <existing-deployment-key>
+dota deployment add <appName> <deploymentName> -k <existing-deployment-key>
 ```
 
 Just like with apps, you can remove and rename deployments as well, using the following commands respectively:
 
 ```
-code-push-standalone deployment rm <appName> <deploymentName>
-code-push-standalone deployment rename <appName> <deploymentName> <newDeploymentName>
+dota deployment rm <appName> <deploymentName>
+dota deployment rename <appName> <deploymentName> <newDeploymentName>
 ```
 
 If at any time you'd like to view the list of deployments that a specific app includes, you can simply run the following command:
 
 ```
-code-push-standalone deployment ls <appName> [--displayKeys|-k]
+dota deployment ls <appName> [--displayKeys|-k]
 ```
 
 This will display not only the list of deployments, but also the update metadata (e.g. mandatory, description) and installation metrics for their latest release:
@@ -237,28 +237,28 @@ The install metrics have the following meaning:
 
 - **Pending** - The number of times this release has been downloaded, but not yet installed (i.e. the app was restarted to apply the changes). Therefore, this metric increases as updates are downloaded, and decreases as those corresponding downloaded updates are installed. This metric primarily applies to updates that aren't configured to install immediately, and helps provide the broader picture of release adoption for apps that rely on app resume and/or restart to apply an update (e.g. I want to rollback an update and I'm curious if anyone has downloaded it yet). If you've configured updates to install immediately, and are still seeing pending updates being reported, then it's likely that you're not calling `notifyApplicationReady` (or `sync`) on app start, which is the method that initiates sending install reports and marks installed updates as being considered successful.
 
-- **Rollbacks** - The number of times that this release has been automatically rolled back on the client. Ideally this number should be zero, and in that case, this metric isn't even shown. However, if you released an update that includes a crash as part of the installation process, the CodePush plugin will roll the end-user back to the previous release, and report that issue back to the server. This allows your end-users to remain unblocked in the event of broken releases, and by being able to see this telemetry in the CLI, you can identify erroneous releases and respond to them by [rolling it back](#rolling-back-undesired-updates) on the server.
+- **Rollbacks** - The number of times that this release has been automatically rolled back on the client. Ideally this number should be zero, and in that case, this metric isn't even shown. However, if you released an update that includes a crash as part of the installation process, the DOTA plugin will roll the end-user back to the previous release, and report that issue back to the server. This allows your end-users to remain unblocked in the event of broken releases, and by being able to see this telemetry in the CLI, you can identify erroneous releases and respond to them by [rolling it back](#rolling-back-undesired-updates) on the server.
 
 - **Rollout** - Indicates the percentage of users that are eligible to receive this update. This property will only be displayed for releases that represent an "active" rollout, and therefore, have a rollout percentage that is less than 100%. Additionally, since a deployment can only have one active rollout at any given time, this label would only be present on the latest release within a deployment.
 
 - **Disabled** - Indicates whether the release has been marked as disabled or not, and therefore, is downloadable by end users. This property will only be displayed for releases that are actually disabled.
 
-When the metrics cell reports `No installs recorded`, that indicates that the server hasn't seen any activity for this release. This could either be because it precluded the plugin versions that included telemetry support, or no end-users have synchronized with the CodePush server yet. As soon as an install happens, you will begin to see metrics populate in the CLI for the release.
+When the metrics cell reports `No installs recorded`, that indicates that the server hasn't seen any activity for this release. This could either be because it precluded the plugin versions that included telemetry support, or no end-users have synchronized with the DOTA server yet. As soon as an install happens, you will begin to see metrics populate in the CLI for the release.
 
 ## Releasing Updates
 
-Once your app has been configured to query for updates against the CodePush server, you can begin releasing updates to it. In order to provide both simplicity and flexibility, the CodePush CLI includes two different commands for releasing updates:
+Once your app has been configured to query for updates against the DOTA server, you can begin releasing updates to it. In order to provide both simplicity and flexibility, the DOTA CLI includes two different commands for releasing updates:
 
-1. [General](#releasing-updates-general) - Releases an update to the CodePush server that was generated by an external tool or build script (e.g. a Gulp task, the `react-native bundle` command). This provides the most flexibility in terms of fitting into existing workflows, since it strictly deals with CodePush-specific step, and leaves the app-specific compilation process to you.
+1. [General](#releasing-updates-general) - Releases an update to the DOTA server that was generated by an external tool or build script (e.g. a Gulp task, the `react-native bundle` command). This provides the most flexibility in terms of fitting into existing workflows, since it strictly deals with DOTA-specific step, and leaves the app-specific compilation process to you.
 
-2. [React Native](#releasing-updates-react-native) - Performs the same functionality as the general release command, but also handles the task of generating the updated app contents for you (JS bundle and assets), instead of requiring you to run both `react-native bundle` and then `code-push-standalone release`.
+2. [React Native](#releasing-updates-react-native) - Performs the same functionality as the general release command, but also handles the task of generating the updated app contents for you (JS bundle and assets), instead of requiring you to run both `react-native bundle` and then `dota release`.
 
 Which of these commands you should use is mostly a matter of requirements and/or preference. However, we generally recommend using the platform-specific command to start (since it greatly simplifies the experience), and then leverage the general-purpose `release` command if/when greater control is needed.
 
 ### Releasing Updates (General)
 
 ```
-code-push-standalone release <appName> <updateContents> <targetBinaryVersion>
+dota release <appName> <updateContents> <targetBinaryVersion>
 [--deploymentName <deploymentName>]
 [--description <description>]
 [--disabled <disabled>]
@@ -269,7 +269,7 @@ code-push-standalone release <appName> <updateContents> <targetBinaryVersion>
 
 #### App name parameter
 
-This specifies the name of the CodePush app that this update is being released for. This value corresponds to the friendly name that you specified when originally calling `code-push-standalone app add` (e.g. "MyApp-Android"). If you need to look it up, you can run the `code-push-standalone app ls` command to see your list of apps.
+This specifies the name of the DOTA app that this update is being released for. This value corresponds to the friendly name that you specified when originally calling `dota app add` (e.g. "MyApp-Android"). If you need to look it up, you can run the `dota app ls` command to see your list of apps.
 
 #### Update contents parameter
 
@@ -288,16 +288,16 @@ It's important that the path you specify refers to the platform-specific, prepar
 
 This specifies the store/binary version of the application you are releasing the update for, so that only users running that version will receive the update, while users running an older and/or newer version of the app binary will not. This is useful for the following reasons:
 
-1. If a user is running an older binary version, it's possible that there are breaking changes in the CodePush update that wouldn't be compatible with what they're running.
+1. If a user is running an older binary version, it's possible that there are breaking changes in the DOTA update that wouldn't be compatible with what they're running.
 
-2. If a user is running a newer binary version, then it's presumed that what they are running is newer (and potentially incompatible) with the CodePush update.
+2. If a user is running a newer binary version, then it's presumed that what they are running is newer (and potentially incompatible) with the DOTA update.
 
 If you ever want an update to target multiple versions of the app store binary, we also allow you to specify the parameter as a [semver range expression](https://github.com/npm/node-semver#advanced-range-syntax). That way, any client device running a version of the binary that satisfies the range expression (i.e. `semver.satisfies(version, range)` returns `true`) will get the update. Examples of valid semver range expressions are as follows:
 
 | Range Expression | Who gets the update                                                                    |
 | ---------------- | -------------------------------------------------------------------------------------- |
 | `1.2.3`          | Only devices running the specific binary app store version `1.2.3` of your app         |
-| `*`              | Any device configured to consume updates from your CodePush app                        |
+| `*`              | Any device configured to consume updates from your DOTA app                        |
 | `1.2.x`          | Devices running major version 1, minor version 2 and any patch version of your app     |
 | `1.2.3 - 1.2.7`  | Devices running any binary version between `1.2.3` (inclusive) and `1.2.7` (inclusive) |
 | `>=1.2.3 <1.2.7` | Devices running any binary version between `1.2.3` (inclusive) and `1.2.7` (exclusive) |
@@ -305,11 +305,11 @@ If you ever want an update to target multiple versions of the app store binary, 
 | `^1.2.3`         | Equivalent to `>=1.2.3 <2.0.0`                                                         |
 
 _NOTE: If your semver expression starts with a special shell character or operator such as `>`, `^`, or \*\*
-_, the command may not execute correctly if you do not wrap the value in quotes as the shell will not supply the right values to our CLI process. Therefore, it is best to wrap your `targetBinaryVersion` parameter in double quotes when calling the `release` command, e.g. `code-push-standalone release MyApp-iOS updateContents ">1.2.3"`.\*
+_, the command may not execute correctly if you do not wrap the value in quotes as the shell will not supply the right values to our CLI process. Therefore, it is best to wrap your `targetBinaryVersion` parameter in double quotes when calling the `release` command, e.g. `dota release MyApp-iOS updateContents ">1.2.3"`.\*
 
 _NOTE: As defined in the semver spec, ranges only work for non pre-release versions: https://github.com/npm/node-semver#prerelease-tags. If you want to update a version with pre-release tags, then you need to write the exact version you want to update (`1.2.3-beta` for example)._
 
-The following table outlines the version value that CodePush expects your update's semver range to satisfy for each respective app type:
+The following table outlines the version value that DOTA expects your update's semver range to satisfy for each respective app type:
 
 | Platform               | Source of app store version                                                  |
 | ---------------------- | ---------------------------------------------------------------------------- |
@@ -365,7 +365,7 @@ This specifies that if the update is identical to the latest release on the depl
 
 #### Rollout parameter
 
-**IMPORTANT: In order for this parameter to actually take affect, your end users need to be running version `1.9.0-beta+` (for React Native) of the CodePush plugin. If you release an update that specifies a rollout property, no end user running an older version of React Native plugins will be eligible for the update. Therefore, until you have adopted the neccessary version of the platform-specific CodePush plugin (as previously mentioned), we would advise not setting a rollout value on your releases, since no one would end up receiving it.**
+**IMPORTANT: In order for this parameter to actually take affect, your end users need to be running version `1.9.0-beta+` (for React Native) of the DOTA plugin. If you release an update that specifies a rollout property, no end user running an older version of React Native plugins will be eligible for the update. Therefore, until you have adopted the neccessary version of the platform-specific DOTA plugin (as previously mentioned), we would advise not setting a rollout value on your releases, since no one would end up receiving it.**
 
 This specifies the percentage of users (as an integer between `1` and `100`) that should be eligible to receive this update. It can be helpful if you want to "flight" new releases with a portion of your audience (e.g. 25%), and get feedback and/or watch for exceptions/crashes, before making it broadly available for everyone. If this parameter isn't set, it is set to `100%`, and therefore, you only need to set it if you want to actually limit how many users will receive it.
 
@@ -382,7 +382,7 @@ _NOTE: This parameter can be set using either `--rollout` or `-r`_
 ### Releasing Updates (React Native)
 
 ```shell
-code-push-standalone release-react <appName> <platform>
+dota release-react <appName> <platform>
 [--bundleName <bundleName>]
 [--deploymentName <deploymentName>]
 [--description <description>]
@@ -409,7 +409,7 @@ code-push-standalone release-react <appName> <platform>
 
 The `release-react` command is a React Native-specific version of the "vanilla" [`release`](#releasing-app-updates) command, which supports all of the same parameters (e.g. `--mandatory`, `--description`), yet simplifies the process of releasing updates by performing the following additional behavior:
 
-1. Running the `react-native bundle` command in order to generate the [update contents](#update-contents-parameter) (JS bundle and assets) that will be released to the CodePush server. It uses sensible defaults as much as possible (e.g. creating a non-dev build, assuming an iOS entry file is named `index.ios.js`), but also exposes the relevant `react-native bundle` parameters to enable flexibility (e.g. `--sourcemapOutput`).
+1. Running the `react-native bundle` command in order to generate the [update contents](#update-contents-parameter) (JS bundle and assets) that will be released to the DOTA server. It uses sensible defaults as much as possible (e.g. creating a non-dev build, assuming an iOS entry file is named `index.ios.js`), but also exposes the relevant `react-native bundle` parameters to enable flexibility (e.g. `--sourcemapOutput`).
 
 2. Inferring the [`targetBinaryVersion`](#target-binary-version-parameter) of this release by using the version name that is specified in your project's `Info.plist` (for iOS) and `build.gradle` (for Android) files.
 
@@ -424,13 +424,13 @@ react-native bundle --platform ios \
 --assets-dest ./CodePush \
 --dev false
 
-code-push-standalone release MyApp-iOS ./CodePush 1.0.0
+dota release MyApp-iOS ./CodePush 1.0.0
 ```
 
 Achieving the equivalent behavior with the `release-react` command would simply require the following command, which is generally less error-prone:
 
 ```shell
-code-push-standalone release-react MyApp-iOS ios
+dota release-react MyApp-iOS ios
 ```
 
 #### App name parameter
@@ -489,35 +489,35 @@ _NOTE: This parameter can be set using either --entryFile or -e_
 
 #### Gradle file parameter (Android only)
 
-This specifies the relative path to the `build.gradle` file that the CLI should use when attempting to auto-detect the target binary version for the release. This parameter is only meant for advanced scenarios, since the CLI will automatically be able to find your `build.grade` file in "standard" React Native projects. However, if your gradle file is located in an arbitrary location, that the CLI can't discover, then using this parameter allows you to continue releasing CodePush updates, without needing to explicitly set the `--targetBinaryVersion` parameter. Since `build.gradle` is a required file name, specifying the path to the containing folder or the full path to the file itself will both achieve the same effect.
+This specifies the relative path to the `build.gradle` file that the CLI should use when attempting to auto-detect the target binary version for the release. This parameter is only meant for advanced scenarios, since the CLI will automatically be able to find your `build.grade` file in "standard" React Native projects. However, if your gradle file is located in an arbitrary location, that the CLI can't discover, then using this parameter allows you to continue releasing DOTA updates, without needing to explicitly set the `--targetBinaryVersion` parameter. Since `build.gradle` is a required file name, specifying the path to the containing folder or the full path to the file itself will both achieve the same effect.
 
 ```shell
-code-push-standalone release-react MyApp-Android android -p "./foo/bar/"
-code-push-standalone release-react MyApp-Android android -p "./foo/bar/build.gradle"
+dota release-react MyApp-Android android -p "./foo/bar/"
+dota release-react MyApp-Android android -p "./foo/bar/build.gradle"
 ```
 
 #### Plist file parameter (iOS only)
 
-This specifies the relative path to the `Info.plist` file that the CLI should use when attempting to auto-detect the target binary version for the release. This parameter is only meant for advanced scenarios, since the CLI will automatically be able to find your `Info.plist` file in "standard" React Native projects, and you can use the `--plistFilePrefix` parameter in order to support per-environment plist files (e.g. `STAGING-Info.plist`). However, if your plist is located in an arbitrary location, that the CLI can't discover, then using this parameter allows you to continue releasing CodePush updates, without needing to explicitly set the `--targetBinaryVersion` parameter.
+This specifies the relative path to the `Info.plist` file that the CLI should use when attempting to auto-detect the target binary version for the release. This parameter is only meant for advanced scenarios, since the CLI will automatically be able to find your `Info.plist` file in "standard" React Native projects, and you can use the `--plistFilePrefix` parameter in order to support per-environment plist files (e.g. `STAGING-Info.plist`). However, if your plist is located in an arbitrary location, that the CLI can't discover, then using this parameter allows you to continue releasing DOTA updates, without needing to explicitly set the `--targetBinaryVersion` parameter.
 
 ```shell
-code-push-standalone release-react MyApp-iOS ios -p "./foo/bar/MyFile.plist"
+dota release-react MyApp-iOS ios -p "./foo/bar/MyFile.plist"
 ```
 
 _NOTE: This parameter can be set using either --plistFile or -p_
 
 #### Plist file prefix parameter (iOS only)
 
-This specifies the file name prefix of the `Info.plist` file that that CLI should use when attempting to auto-detect the target binary version for the release. This can be useful if you've created per-environment plist files (e.g. `DEV-Info.plist`, `STAGING-Info.plist`), and you want to be able to release CodePush updates without needing to explicitly set the `--targetBinaryVersion` parameter. By specifying a `--plistFilePrefx`, the CLI will look for a file named `<prefix>-Info.plist`, instead of simply `Info.plist` (which is the default behavior), in the following locations: `./ios` and `./ios/<appName>`. If your plist file isn't located in either of those directories (e.g. your app is a native iOS app with embedded RN views), or uses an entirely different file naming convention, then consider using the `--plistFile` parameter.
+This specifies the file name prefix of the `Info.plist` file that that CLI should use when attempting to auto-detect the target binary version for the release. This can be useful if you've created per-environment plist files (e.g. `DEV-Info.plist`, `STAGING-Info.plist`), and you want to be able to release DOTA updates without needing to explicitly set the `--targetBinaryVersion` parameter. By specifying a `--plistFilePrefx`, the CLI will look for a file named `<prefix>-Info.plist`, instead of simply `Info.plist` (which is the default behavior), in the following locations: `./ios` and `./ios/<appName>`. If your plist file isn't located in either of those directories (e.g. your app is a native iOS app with embedded RN views), or uses an entirely different file naming convention, then consider using the `--plistFile` parameter.
 
 ```shell
 # Auto-detect the target binary version of this release by looking up the
 # app version within the STAGING-Info.plist file in either the ./ios or ./ios/<APP> directories.
-code-push-standalone release-react MyApp-iOS ios --pre "STAGING"
+dota release-react MyApp-iOS ios --pre "STAGING"
 
 # Tell the CLI to use your dev plist (`DEV-Info.plist`).
 # Note that the hyphen separator can be explicitly stated.
-code-push-standalone release-react MyApp-iOS ios --pre "DEV-"
+dota release-react MyApp-iOS ios --pre "DEV-"
 ```
 
 _NOTE: This parameter can be set using either --plistFilePrefix or --pre_
@@ -576,25 +576,25 @@ Name of build configuration which specifies the binary version you want to targe
 
 _NOTE: This parameter can be set using either --buildConfigurationName or -c_
 
-## Debugging CodePush Integration
+## Debugging DOTA Integration
 
-Once you've released an update, React Native plugin has been integrated into your app, it can be helpful to diagnose how the plugin is behaving, especially if you run into an issue and want to understand why. In order to debug the CodePush update discovery experience, you can run the following command in order to easily view the diagnostic logs produced by the CodePush plugin within your app:
+Once you've released an update, React Native plugin has been integrated into your app, it can be helpful to diagnose how the plugin is behaving, especially if you run into an issue and want to understand why. In order to debug the DOTA update discovery experience, you can run the following command in order to easily view the diagnostic logs produced by the DOTA plugin within your app:
 
 ```shell
-code-push-standalone debug <platform>
+dota debug <platform>
 
-# View all CodePush logs from a running
+# View all DOTA logs from a running
 # instace of the iOS simulator.
-code-push-standalone debug ios
+dota debug ios
 
-# View all CodePush logs from a running
+# View all DOTA logs from a running
 # Android emulator or attached device.
-code-push-standalone debug android
+dota debug android
 ```
 
 <img width="500" src="https://cloud.githubusercontent.com/assets/116461/16246597/bd49a9ac-37ba-11e6-9aa4-a2d3b2821a90.png" />
 
-Under the covers, this command simply automates the usage of the iOS system logs and ADB logcat, but provides a platform-agnostic, filtered view of all logs coming from the CodePush plugin. This way, you don't need to learn and/or use another tool simply to be able to answer basic questions about how CodePush is behaving.
+Under the covers, this command simply automates the usage of the iOS system logs and ADB logcat, but provides a platform-agnostic, filtered view of all logs coming from the DOTA plugin. This way, you don't need to learn and/or use another tool simply to be able to answer basic questions about how DOTA is behaving.
 
 _NOTE: The debug command supports both emulators and devices for Android, but currently only supports listening to logs from the iOS simulator. We hope to add device support soon._
 
@@ -603,7 +603,7 @@ _NOTE: The debug command supports both emulators and devices for Android, but cu
 After releasing an update, there may be scenarios where you need to modify one or more of the metadata attributes associated with it (e.g. you forgot to mark a critical bug fix as mandatory, you want to increase the rollout percentage of an update). You can easily do this by running the following command:
 
 ```shell
-code-push-standalone patch <appName> <deploymentName>
+dota patch <appName> <deploymentName>
 [--label <releaseLabel>]
 [--mandatory <isMandatory>]
 [--description <description>]
@@ -618,15 +618,15 @@ Aside from the `appName` and `deploymentName`, all parameters are optional, and 
 
 ```shell
 # Mark the latest production release as mandatory
-code-push-standalone patch MyApp-iOS Production -m
+dota patch MyApp-iOS Production -m
 
 # Increase the rollout for v23 to 50%
-code-push-standalone patch MyApp-iOS Production -l v23 -rollout 50%
+dota patch MyApp-iOS Production -l v23 -rollout 50%
 ```
 
 ### Label parameter
 
-Indicates which release (e.g. `v23`) you want to update within the specified deployment. If ommitted, the requested changes will be applied to the latest release in the specified deployment. In order to look up the label for the release you want to update, you can run the `code-push-standalone deployment history` command and refer to the `Label` column.
+Indicates which release (e.g. `v23`) you want to update within the specified deployment. If ommitted, the requested changes will be applied to the latest release in the specified deployment. In order to look up the label for the release you want to update, you can run the `dota deployment history` command and refer to the `Label` column.
 
 _NOTE: This parameter can be set using either `--label` or `-l`_
 
@@ -655,7 +655,7 @@ This is the same parameter as the one described in the [above section](#target-b
 ```shell
 # Add a "max binary version" to an existing release
 # by scoping its eligibility to users running >= 1.0.5
-code-push-standalone patch MyApp-iOS Staging -t "1.0.0 - 1.0.5"
+dota patch MyApp-iOS Staging -t "1.0.0 - 1.0.5"
 ```
 
 ## Promoting Updates
@@ -663,7 +663,7 @@ code-push-standalone patch MyApp-iOS Staging -t "1.0.0 - 1.0.5"
 Once you've tested an update against a specific deployment (e.g. `Staging`), and you want to promote it "downstream" (e.g. dev->staging, staging->production), you can simply use the following command to copy the release from one deployment to another:
 
 ```
-code-push-standalone promote <appName> <sourceDeploymentName> <destDeploymentName>
+dota promote <appName> <sourceDeploymentName> <destDeploymentName>
 [--description <description>]
 [--label <label>]
 [--disabled <disabled>]
@@ -712,7 +712,7 @@ This is the same parameter as the one described in the [above section](#target-b
 ```shell
 # Promote the release to production and make it
 # available to all versions using that deployment
-code-push-standalone promote MyApp-iOS Staging Production -t "*"
+dota promote MyApp-iOS Staging Production -t "*"
 ```
 
 ## Rolling Back Updates
@@ -720,8 +720,8 @@ code-push-standalone promote MyApp-iOS Staging Production -t "*"
 A deployment's release history is immutable, so you cannot delete or remove an update once it has been released. However, if you release an update that is broken or contains unintended features, it is easy to roll it back using the `rollback` command:
 
 ```
-code-push-standalone rollback <appName> <deploymentName>
-code-push-standalone rollback MyApp-iOS Production
+dota rollback <appName> <deploymentName>
+dota rollback MyApp-iOS Production
 ```
 
 This has the effect of creating a new release for the deployment that includes the **exact same code and metadata** as the version prior to the latest one. For example, imagine that you released the following updates to your app:
@@ -746,7 +746,7 @@ End-users that had already acquired `v3` would now be "moved back" to `v2` when 
 If you would like to rollback a deployment to a release other than the previous (e.g. `v3` -> `v2`), you can specify the optional `--targetRelease` parameter:
 
 ```
-code-push-standalone rollback MyApp-iOS Production --targetRelease v34
+dota rollback MyApp-iOS Production --targetRelease v34
 ```
 
 _NOTE: The release produced by a rollback will be annotated in the output of the `deployment history` command to help identify them more easily._
@@ -756,7 +756,7 @@ _NOTE: The release produced by a rollback will be annotated in the output of the
 You can view a history of the 50 most recent releases for a specific app deployment using the following command:
 
 ```
-code-push-standalone deployment history <appName> <deploymentName>
+dota deployment history <appName> <deploymentName>
 ```
 
 The history will display all attributes about each release (e.g. label, mandatory) as well as indicate if any releases were made due to a promotion or a rollback operation.
@@ -774,14 +774,14 @@ _NOTE: The history command can also be run using the "h" alias_
 You can clear the release history associated with a deployment using the following command:
 
 ```
-code-push-standalone deployment clear <appName> <deploymentName>
+dota deployment clear <appName> <deploymentName>
 ```
 
 After running this command, client devices configured to receive updates using its associated deployment key will no longer receive the updates that have been cleared. This command is irreversible, and therefore should not be used in a production deployment.
 
-## Code Signing for CodePush
+## Code Signing for DOTA
 
-Code Signing ensures that updates deployed via CodePush are secure and verified. Follow these steps to set up Code Signing:
+Code Signing ensures that updates deployed via DOTA are secure and verified. Follow these steps to set up Code Signing:
 
 ### 1. Generate a Signing Key
 
@@ -795,12 +795,12 @@ openssl genrsa -out private.pem
 openssl rsa -pubout -in private.pem -out public.pem
 ```
 
-### 2. Configure CodePush CLI
+### 2. Configure DOTA CLI
 
 **Specify the path to your private key when releasing updates:**
 
 ```shell
-code-push-standalone release-react <appName> <platform> --privateKeyPath private.pem
+dota release-react <appName> <platform> --privateKeyPath private.pem
 ```
 
 ### 3. Configure Your App

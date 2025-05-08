@@ -1,7 +1,7 @@
 {
-  "name": "code-push-cli",
+  "name": "dota-cli",
   "version": "0.0.1",
-  "description": "Management CLI for the CodePush service",
+  "description": "Management CLI for the Dota service",
   "main": "./script/cli.js",
   "scripts": {
     "start": "node ./bin/script/cli.js",
@@ -10,15 +10,11 @@
     "lint": "npx eslint ./script/**/*.ts",
     "lint:fix": "npx eslint ./script/**/*.ts --fix",
     "debug": "node --inspect-brk ./bin/script/cli.js",
-    "exec:clean" : "npm install && npm run build  && npm install -g",
-    "exec" : "npm run build && npm run build && npm install -g"
+    "exec:clean": "npm cache clean --force && rm -rf node_modules package-lock.json && npm install && npm run build && npm install -g .",
+    "exec": "npm run build && npm run build && npm install -g"
   },
   "bin": {
-    "code-push-standalone": "./bin/script/cli.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/microsoft/code-push-server"
+    "dota": "./bin/script/cli.js"
   },
   "author": "Microsoft",
   "dependencies": {
@@ -41,7 +37,7 @@
     "semver": "^7.5.3",
     "simctl": "^2.0.3",
     "slash": "1.0.0",
-    "superagent": "^8.0.9",
+    "superagent": "^10.2.0",
     "temp": "^0.9.4",
     "which": "^1.2.7",
     "wordwrap": "1.0.0",

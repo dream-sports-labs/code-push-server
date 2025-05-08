@@ -51,5 +51,9 @@ __azurite_db_*
 __blobstorage__
 __queuestorage__
 
+azurite-storage
+AzuriteConfig
+
 # VS Code settings
-.vscode/
+.vscode
+.vscode*

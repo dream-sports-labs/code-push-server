@@ -12,6 +12,8 @@ import { RedisManager } from "./redis-manager";
 import { Storage } from "./storage/storage";
 import { Response } from "express";
 import rateLimit from "express-rate-limit";
+import config from "../config";
+import { StorageType, StorageConfig } from "../config-utils";
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || "<your-s3-bucket-name>";
 const RDS_DB_INSTANCE_IDENTIFIER = process.env.RDS_DB_INSTANCE_IDENTIFIER || "<your-rds-instance>";
 const SECRETS_MANAGER_SECRET_ID = process.env.SECRETS_MANAGER_SECRET_ID || "<your-secret-id>";
@@ -48,19 +50,48 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
   let isSecretsManagerConfigured: boolean;
   let secretValue: any;
 
+
   Promise.resolve(<void>(null))
     .then(async () => {
-      if (!useJsonStorage) {
-        //storage = new JsonStorage();
+      // Use config layer for storage - initialize based on config.storage.type
+      const storageType = config.storage.type;
+      
+      if (storageType === StorageType.AWS) {
+        console.log("Initializing S3Storage");
         storage = new S3Storage();
-      } else {
+      } 
+      else if (storageType === StorageType.AZURE) {
+        console.log("Initializing AzureStorage");
+        const azureConfig = config.storage;
+        if (azureConfig.type === StorageType.AZURE) {
+          storage = new AzureStorage(
+            azureConfig.account,
+            azureConfig.accessKey
+          );
+        } else {
+          throw new Error("Invalid Azure storage configuration");
+        }
+      }
+      else if (storageType === StorageType.LOCAL) {
+        console.log("Initializing JsonStorage");
         storage = new JsonStorage();
+      }
+      else {
+        throw new Error("Unsupported storage provider configuration");
       }
     })
     .then(() => {
       const app = express();
       const auth = api.auth({ storage: storage });
-      const redisManager = new RedisManager();
+      // Use config layer for cache
+      let redisManager: RedisManager;
+      if (config.cache.type === "redis") {
+        console.log("Initializing RedisManager with config type:", config.cache.type);
+        // The RedisManager already reads from env, but you could refactor it to accept config
+        redisManager = new RedisManager();
+      } else {
+        throw new Error("Unsupported cache provider");
+      }
 
       // First, to wrap all requests and catch all exceptions.
       app.use(domain);
