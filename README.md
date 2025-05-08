@@ -1,37 +1,48 @@
-# Visual Studio App Center CodePush Standalone Version
+# DOTA - Over-the-Air Updates for React Native Apps
 
-[CodePush](https://learn.microsoft.com/en-us/appcenter/distribution/codepush/) is an App Center feature that enables React Native developers to deploy mobile app updates directly to their users’ devices. It consists of two parts: CodePush Server where developers can publish app updates to (e.g. JS, HTML, CSS or image changes), and [CodePush React Native Client SDK](https://github.com/Microsoft/react-native-code-push) that enables querying for updates from within an app.
+DOTA enables React Native developers to deploy mobile app updates directly to their users' devices. It consists of two parts: DOTA Server where developers publish app updates (JS, HTML, CSS or image changes), and [DOTA React Native Client SDK](https://github.com/microsoft/react-native-code-push) that enables querying for updates from within an app.
 
-We announced that Visual Studio App Center will be retired on March 31, 2025. You can learn more about the support timeline and alternatives on https://aka.ms/appcenter/retire. In order to let developers keep using CodePush functionality after App Center is fully retired, we created a standalone version of CodePush Server that can be deployed and used independently from App Center itself. Code of this standalone version can be found in this repository. It is fully compatible with [CodePush React Native Client SDK](https://github.com/Microsoft/react-native-code-push).
+## 🚀 Overview
 
+DOTA provides a complete solution for React Native over-the-air updates, allowing you to:
 
-## Getting Started
+- Deploy app updates without going through app stores
+- Target updates to specific app versions
+- Control the rollout percentage of updates
+- Make updates mandatory when critical
+- Monitor deployment metrics
+- Manage multiple deployment environments (Staging, Production)
 
-### CodePush Server
+## 📦 Getting Started
 
-The CodePush server, located in the `api` subdirectory, allows developers to build, deploy and manage CodePush updates themselves.
-For detailed information about the CodePush server, including installation instructions and usage details, please refer to the [CodePush Server README](./api/README.md).
+### DOTA Server
 
+The DOTA server, located in the `api` subdirectory, allows you to build, deploy and manage DOTA updates yourself. You can deploy the server in multiple ways:
 
-### CodePush CLI
+- **AWS** - Deploy to your own AWS infrastructure
+- **Azure** - Run as an Azure App Service
+- **Local** - Run on your own servers or development environment
 
-The CodePush CLI, located in `cli` subdirectory, is a command-line tool that allows developers to interact with the CodePush server. For detailed information about the CodePush CLI, including installation instructions and usage details, please refer to the [CodePush CLI README](./cli/README.md).
+For detailed information about the DOTA server, including installation instructions and usage details, please refer to the [DOTA Server README](./api/README.md).
 
+### DOTA CLI
 
-## Contributing
+The DOTA CLI, located in the `cli` subdirectory, is a command-line tool that allows developers to interact with the DOTA server. For detailed information about the DOTA CLI, including installation instructions and usage details, please refer to the [DOTA CLI README](./cli/README.md).
 
-While we cannot accept contributions or issues in this repository; however, as a permissively licensed open-source project, it is ready for community development and forks independently.
+## 🛠️ Deployment Options
 
+### Local Deployment
 
-## Support
+For development or self-hosted environments, DOTA can be run locally. The server requires storage support (Azure Blob Storage or Azurite emulator locally).
 
-This code is provided “as is”, because of that Microsoft will not provide support services for it.
+### AWS Deployment
 
+DOTA can be deployed to AWS using your preferred AWS services for computing and storage(docker emulator locally).
 
-## Legal Notice
+### Azure Deployment
 
-Microsoft grants you access to the code in this repository under the MIT License, see the [LICENSE](./LICENSE) to learn more.
+DOTA is designed to run as an Azure App Service with Azure Blob Storage for backend storage needs.
 
-Microsoft, Windows, Microsoft Azure and/or other Microsoft products and services referenced in the documentation may be either trademarks or registered trademarks of Microsoft in the United States and/or other countries. The license for this code does not grant you rights to use any Microsoft names, logos, or trademarks. Go to [Microsoft Trademark and Brand Guidelines](http://go.microsoft.com/fwlink/?LinkID=254653) for more information.
+## ⚖️ License
 
-Privacy information can be found at https://privacy.microsoft.com/.
+This code is provided under the MIT License, see the [LICENSE](./LICENSE) to learn more.
