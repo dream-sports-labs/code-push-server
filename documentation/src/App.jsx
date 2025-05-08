@@ -297,7 +297,7 @@ function App() {
                   activeTab === tabId ? 'text-primary' : 'text-text-secondary'
                 }`}
               >
-                {tabId.charAt(0).toUpperCase() + tabId.slice(1)}
+                {tabId === 'faq' ? 'FAQ' : tabId.charAt(0).toUpperCase() + tabId.slice(1)}
               </button>
             ))}
           </nav>
@@ -360,7 +360,7 @@ function App() {
                     activeTab === tabId ? 'text-primary bg-primary-lightest' : 'text-text-secondary'
                   }`}
                 >
-                  {tabId.charAt(0).toUpperCase() + tabId.slice(1)}
+                  {tabId === 'faq' ? 'FAQ' : tabId.charAt(0).toUpperCase() + tabId.slice(1)}
                 </button>
               ))}
               <button
@@ -457,7 +457,7 @@ function App() {
                 <span className="badge-dot bg-white/50"></span>
                 Core Features
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-text-heading mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-text-heading mb-4 simple-heading">
                 Why Choose DOTA?
               </h2>
               <p className="text-xl text-text-secondary max-w-2xl mx-auto">
@@ -488,7 +488,7 @@ function App() {
                   <span className="badge-dot bg-primary-accent"></span>
                   Simple Integration
                 </div>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-text-heading mb-4">
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-text-heading mb-4 simple-heading">
                   Easy to Implement & Use
                 </h2>
                 <p className="text-lg text-text-secondary mb-6">
@@ -587,7 +587,7 @@ AppRegistry.registerComponent('YourAppName', () => App);`}
                 <span className="badge-dot bg-white/50"></span>
                 Documentation
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-text-heading mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-text-heading mb-4 simple-heading">
                 Get Started with DOTA
               </h2>
               <p className="text-xl text-text-secondary max-w-2xl mx-auto">
@@ -627,7 +627,7 @@ AppRegistry.registerComponent('YourAppName', () => App);`}
                 <span className="badge-dot bg-primary-accent"></span>
                 Need Help?
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-text-heading mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-text-heading mb-4 simple-heading">
                 Frequently Asked Questions
               </h2>
               <p className="text-xl text-text-secondary max-w-2xl mx-auto">
@@ -678,7 +678,7 @@ AppRegistry.registerComponent('YourAppName', () => App);`}
         <section className="py-20 lg:py-28 bg-primary-dark text-white">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6 simple-heading">
                 Ready to Control Your App Updates?
               </h2>
               <p className="text-lg text-primary-foreground/80 mb-10">

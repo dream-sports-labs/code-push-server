@@ -74,8 +74,26 @@
   h4,
   h5,
   h6 {
-    @apply text-text-heading;
+    @apply text-text-heading font-bold relative;
   }
+  
+  h1 {
+    @apply text-4xl mb-8 relative;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+  
+  h2 {
+    @apply text-2xl mb-6 mt-8;
+  }
+  
+  h3 {
+    @apply text-xl mb-4 mt-6;
+  }
+  
+  h4 {
+    @apply text-lg mb-3 mt-5;
+  }
+  
   p {
     @apply leading-relaxed;
   }

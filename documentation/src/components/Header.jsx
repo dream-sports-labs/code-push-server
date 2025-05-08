@@ -8,7 +8,7 @@ export default function Header() {
       <div className="header-container">
         <div className="header-left">
           <div className="logo">
-            <Link to="/documentation" className="logo-link">
+            <Link to="/" className="logo-link">
               <svg
                 viewBox="0 0 24 24"
                 width="28"
@@ -38,7 +38,7 @@ export default function Header() {
             <nav className="nav">
               <ul className="nav-list">
                 <li className="nav-item nav-link-item">
-                  <Link to="/documentation" className="nav-link">
+                  <Link to="/documentation/introduction" className="nav-link">
                     Documentation
                   </Link>
                 </li>

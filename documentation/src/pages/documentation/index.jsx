@@ -1,7 +1,6 @@
-
 export default function Home() {
   return (
-    <div className="content-with-toc home-content">
+    <div className="content-with-toc home-content content">
       <div className="hero-section mb-12 bg-gradient-to-b from-dota-700/10 to-transparent p-6 rounded-lg">
         <h1 className="text-4xl md:text-5xl font-bold mb-4" id="overview">DOTA - Over-the-Air Updates for React Native Apps</h1>
         
@@ -33,7 +32,7 @@ export default function Home() {
         </p>
         
         <div className="grid md:grid-cols-2 gap-6 mt-6">
-          <div className="bg-card border border-card-border rounded-lg p-6">
+          <div className="bg-card dark:bg-gray-800 border border-card-border dark:border-gray-700 rounded-lg p-6">
             <h3 className="text-xl font-semibold mb-4">Key Features</h3>
             <ul className="space-y-2 list-disc pl-5">
               <li>Deploy app updates without going through distribution stores</li>
@@ -45,7 +44,7 @@ export default function Home() {
             </ul>
           </div>
           
-          <div className="bg-card border border-card-border rounded-lg p-6">
+          <div className="bg-card dark:bg-gray-800 border border-card-border dark:border-gray-700 rounded-lg p-6">
             <h3 className="text-xl font-semibold mb-4">DOTA Components</h3>
             <div className="space-y-4">
               <div>
@@ -69,7 +68,7 @@ export default function Home() {
         <h2 className="text-2xl font-bold mb-6" id="getting-started">📦 Getting Started</h2>
         
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-card border border-card-border rounded-lg p-6">
+          <div className="bg-card dark:bg-gray-800 border border-card-border dark:border-gray-700 rounded-lg p-6">
             <h3 className="text-xl font-medium mb-3">DOTA Server</h3>
             <p className="mb-4">
               The DOTA server allows you to build, deploy and manage DOTA updates yourself. Deploy it to your preferred infrastructure.
@@ -81,7 +80,7 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="bg-card border border-card-border rounded-lg p-6">
+          <div className="bg-card dark:bg-gray-800 border border-card-border dark:border-gray-700 rounded-lg p-6">
             <h3 className="text-xl font-medium mb-3">DOTA CLI</h3>
             <p className="mb-4">
               The command-line tool allows developers to interact with the DOTA server for managing deployments.
@@ -93,7 +92,7 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="bg-card border border-card-border rounded-lg p-6">
+          <div className="bg-card dark:bg-gray-800 border border-card-border dark:border-gray-700 rounded-lg p-6">
             <h3 className="text-xl font-medium mb-3">Client SDK</h3>
             <p className="mb-4">
               The React Native client SDK enables your app to check for and apply updates from the DOTA server.
@@ -111,7 +110,7 @@ export default function Home() {
         <h2 className="text-2xl font-bold mb-6" id="deployment-options">🛠️ Deployment Options</h2>
         
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="bg-card border border-card-border rounded-lg p-6">
+          <div className="bg-card dark:bg-gray-800 border border-card-border dark:border-gray-700 rounded-lg p-6">
             <h3 className="text-xl font-medium mb-3">Local Deployment</h3>
             <p className="mb-4">
               For development or self-hosted environments, DOTA can be run locally with storage support (Azure Blob Storage or Azurite emulator).
@@ -123,7 +122,7 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="bg-card border border-card-border rounded-lg p-6">
+          <div className="bg-card dark:bg-gray-800 border border-card-border dark:border-gray-700 rounded-lg p-6">
             <h3 className="text-xl font-medium mb-3">AWS Deployment</h3>
             <p className="mb-4">
               DOTA can be deployed to AWS using your preferred AWS services for computing and storage (docker emulator locally).
@@ -135,7 +134,7 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="bg-card border border-card-border rounded-lg p-6">
+          <div className="bg-card dark:bg-gray-800 border border-card-border dark:border-gray-700 rounded-lg p-6">
             <h3 className="text-xl font-medium mb-3">Azure Deployment</h3>
             <p className="mb-4">
               DOTA is designed to run as an Azure App Service with Azure Blob Storage for backend storage needs.

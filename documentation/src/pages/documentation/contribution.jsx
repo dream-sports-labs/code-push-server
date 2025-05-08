@@ -1,6 +1,6 @@
 export default function Contribution() {
   return (
-    <div>
+    <div className="content">
       <h1 className="text-4xl font-bold mb-8" id="contribution">Contributing to DOTA</h1>
       
       <div className="mb-8">

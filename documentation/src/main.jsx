@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 
 // Documentation Pages
@@ -40,7 +40,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
         {/* Documentation routes with Layout */}
         <Route element={<Layout />}>
-          <Route path="/documentation" element={<Documentation />} />
+          <Route path="/documentation" element={<Navigate to="/documentation/introduction" replace />} />
           <Route path="/documentation/introduction" element={<Introduction />} />
           <Route path="/documentation/installation" element={<Installation />} />
           <Route path="/documentation/contribution" element={<Contribution />} />

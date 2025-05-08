@@ -62,7 +62,7 @@ export default function CLIInstallation() {
         </p>
       </div>
       
-      <div className="bg-gray-50 border rounded-lg p-6 mb-8">
+      <div className="bg-gray-50 dark:bg-gray-800 border rounded-lg p-6 mb-8">
         <h3 className="text-xl font-bold mb-4">Global Installation (Optional)</h3>
         <p className="mb-4">
           If you prefer to install the CLI globally, you can run:

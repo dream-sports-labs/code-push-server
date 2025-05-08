@@ -113,28 +113,56 @@ h3,
 h4,
 h5,
 h6 {
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.2;
-  margin-bottom: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.25rem;
+  position: relative;
   color: var(--text-color);
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--dota-600);
 }
 
 h1 {
-  font-size: 2.25rem;
+  font-size: 2.5rem;
   letter-spacing: -0.025em;
+  background: linear-gradient(to right, var(--dota-600), var(--dota-700));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
 }
 
 h2 {
-  font-size: 1.75rem;
+  font-size: 1.875rem;
   letter-spacing: -0.015em;
+  padding-left: 0.75rem;
+  border-left: 4px solid var(--dota-700);
+  border-bottom-left-radius: 4px;
 }
 
 h3 {
   font-size: 1.5rem;
+  position: relative;
+  padding-left: 1rem;
+}
+
+h3::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4em;
+  height: 0.75em;
+  width: 0.3em;
+  background-color: var(--dota-600);
+  border-radius: 2px;
 }
 
 h4 {
   font-size: 1.25rem;
+  border-bottom: 1px dashed var(--dota-600);
 }
 
 p {
@@ -1231,4 +1259,109 @@ li {
 /* Remove background from alternating rows if desired */
 .content .bg-muted\/30 {
   background-color: transparent;
+}
+
+.content h1,
+.content-with-toc h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid var(--dota-600);
+  background: linear-gradient(to right, var(--dota-600), var(--dota-700));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.content h2,
+.content-with-toc h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  padding-left: 0.75rem;
+  border-left: 4px solid var(--dota-700);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.content h3,
+.content-with-toc h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.content h3::before,
+.content-with-toc h3::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4em;
+  height: 0.75em;
+  width: 0.3em;
+  background-color: var(--dota-600);
+  border-radius: 2px;
+}
+
+.content h4,
+.content-with-toc h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--dota-600);
+  display: inline-block;
+  padding-bottom: 0.25rem;
+}
+
+/* Dark mode overrides for headings */
+.dark-mode .content h1,
+.dark-mode .content-with-toc h1 {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Simple heading style with just an underline for specific headings */
+.simple-heading {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: var(--text-color) !important;
+  text-shadow: none !important;
+  padding-left: 0 !important;
+  border-left: none !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom: 2px solid var(--dota-600) !important;
+  margin-top: 2rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.simple-heading::before {
+  display: none !important;
+}
+
+.content h1.simple-heading,
+.content-with-toc h1.simple-heading,
+.content h2.simple-heading,
+.content-with-toc h2.simple-heading,
+.content h3.simple-heading,
+.content-with-toc h3.simple-heading {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: var(--text-color) !important;
+  text-shadow: none !important;
+  padding-left: 0 !important;
+  border-left: none !important;
+  border-bottom: 2px solid var(--dota-600) !important;
+}
+
+.content h3.simple-heading::before,
+.content-with-toc h3.simple-heading::before {
+  display: none !important;
 }

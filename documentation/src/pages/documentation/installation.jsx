@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function Installation() {
   return (
-    <div>
+    <div className="content">
       <h1 className="text-4xl font-bold mb-8">DOTA CLI Installation</h1>
       <div className="mb-8">
         <p className="text-lg mb-4">

@@ -9,8 +9,8 @@ export default function CLICommands() {
         <span>Commands Reference</span>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-12">
-        <div className="md:w-2/3">
+      <div className="flex flex-col">
+        <div className="w-full">
           <h1 className="text-4xl font-bold mb-6">CLI Commands Reference</h1>
           
           <div className="mb-8">
