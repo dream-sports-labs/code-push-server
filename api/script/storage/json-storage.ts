@@ -561,7 +561,7 @@ export class JsonStorage implements storage.Storage {
     // Unset rollout value for last package for rollback.
     const lastPackage: storage.Package = history.length ? history[history.length - 1] : null;
     if (lastPackage) {
-      lastPackage.rollout = null;
+      lastPackage.rollout = 100;
     }
 
     deployment.packageHistory.push(appPackage);

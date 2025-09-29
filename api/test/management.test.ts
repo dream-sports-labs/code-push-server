@@ -2277,6 +2277,387 @@ function managementTests(useJsonStorage?: boolean): void {
         PATCH("/apps/" + otherApp.name + "/deployments/" + otherDeployment.name, patchedDeployment, done, 403);
       });
     });
+    
+    describe("PATCH /apps/:appName/deployments/:deploymentName/release", () => {
+      let secondPackage: storage.Package;
+      let thirdPackage: storage.Package;
+
+      beforeEach(() => {
+        secondPackage = testUtils.makePackage("1.0.1", false, "hash456", "v2");
+        secondPackage.description = "Second package";
+        secondPackage.isDisabled = false;
+        secondPackage.isMandatory = false;
+        secondPackage.rollout = 100;
+        secondPackage.blobUrl = "/resources/test2.zip";
+        secondPackage.manifestBlobUrl = null;
+        secondPackage.packageHash = "hash456";
+        secondPackage.appVersion = "1.0.1";
+        secondPackage.label = "v2";
+
+        thirdPackage = testUtils.makePackage("1.0.2", true, "hash789", "v3");
+        thirdPackage.description = "Third package";
+        thirdPackage.isDisabled = true;
+        thirdPackage.isMandatory = true;
+        thirdPackage.rollout = 50;
+        thirdPackage.blobUrl = "/resources/test3.zip";
+        thirdPackage.manifestBlobUrl = null;
+        thirdPackage.packageHash = "hash789";
+        thirdPackage.appVersion = "1.0.2";
+        thirdPackage.label = "v3";
+
+        return storage.commitPackage(account.id, app.id, deployment.id, secondPackage)
+          .then(() => storage.commitPackage(account.id, app.id, deployment.id, thirdPackage));
+      });
+
+      describe("Validation errors", () => {
+        it("should return 400 for invalid appVersion", (done) => {
+          const invalidPackageInfo = {
+            packageInfo: {
+              appVersion: "invalid-version"
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, invalidPackageInfo, () => {
+            done();
+          }, 400);
+        });
+
+        it("should return 400 for invalid rollout value", (done) => {
+          const invalidPackageInfo = {
+            packageInfo: {
+              rollout: 150
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, invalidPackageInfo, () => {
+            done();
+          }, 400);
+        });
+
+        it("should return 400 for invalid boolean values", (done) => {
+          const invalidPackageInfo = {
+            packageInfo: {
+              isDisabled: "not-a-boolean",
+              isMandatory: "not-a-boolean"
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, invalidPackageInfo, () => {
+            done();
+          }, 400);
+        });
+      });
+
+      describe("isDisabled field updates", () => {
+        it("should update isDisabled from true to false and set updateRelease to true", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              isDisabled: false
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            // Verify the package was updated in storage
+            storage.getPackageHistory(account.id, app.id, deployment.id)
+              .then((updatedHistory: storage.Package[]) => {
+                const latestPackage = updatedHistory[updatedHistory.length - 1];
+                assert.strictEqual(latestPackage.isDisabled, false);
+                done();
+              })
+              .catch(done);
+          }, 200);
+        });
+
+        it("should update isDisabled from true to false and set updateRelease to true", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              label: "v3", // Target the third package which has isDisabled: true
+              isDisabled: false
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            // Verify the package was updated in storage
+            storage.getPackageHistory(account.id, app.id, deployment.id)
+              .then((updatedHistory: storage.Package[]) => {
+                const targetPackage = updatedHistory.find(pkg => pkg.label === "v3");
+                assert.strictEqual(targetPackage.isDisabled, false);
+                done();
+              })
+              .catch(done);
+          }, 200);
+        });
+
+        it("should not update when isDisabled value is the same", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              isDisabled: true
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            done(); // Should return 204 No Content
+          }, 204);
+        });
+      });
+
+      describe("isMandatory field updates", () => {
+        it("should update isMandatory from false to true and set updateRelease to true", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              label: "v2",
+              isMandatory: true
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            // Verify the package was updated in storage
+            storage.getPackageHistory(account.id, app.id, deployment.id)
+              .then((updatedHistory: storage.Package[]) => {
+                const targetPackage = updatedHistory.find(pkg => pkg.label === "v2");
+                assert.strictEqual(targetPackage.isMandatory, true);
+                done();
+              })
+              .catch(done);
+          }, 200);
+        });
+
+        it("should update isMandatory from true to false and set updateRelease to true", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              isMandatory: false
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            // Verify the package was updated in storage
+            storage.getPackageHistory(account.id, app.id, deployment.id)
+              .then((updatedHistory: storage.Package[]) => {
+                const targetPackage = updatedHistory.find(pkg => pkg.label === "v3");
+                assert.strictEqual(targetPackage.isMandatory, false);
+                done();
+              })
+              .catch(done);
+          }, 200);
+        });
+      });
+
+      describe("description field updates", () => {
+        it("should update description and set updateRelease to true", (done) => {
+          const newDescription = "Updated package description";
+          const packageInfo = {
+            packageInfo: {
+              description: newDescription
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            storage.getPackageHistory(account.id, app.id, deployment.id)
+              .then((updatedHistory: storage.Package[]) => {
+                const latestPackage = updatedHistory[updatedHistory.length - 1];
+                assert.strictEqual(latestPackage.description, newDescription);
+                done();
+              })
+              .catch(done);
+          }, 200);
+        });
+
+        it("should not update when description is the same", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              description: "Third package"
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            done();
+          }, 204);
+        });
+      });
+
+      describe("appVersion field updates", () => {
+        it("should update appVersion and set updateRelease to true", (done) => {
+          const newAppVersion = "1.1.0";
+          const packageInfo = {
+            packageInfo: {
+              appVersion: newAppVersion
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            storage.getPackageHistory(account.id, app.id, deployment.id)
+              .then((updatedHistory: storage.Package[]) => {
+                const latestPackage = updatedHistory[updatedHistory.length - 1];
+                assert.strictEqual(latestPackage.appVersion, newAppVersion);
+                done();
+              })
+              .catch(done);
+          }, 200);
+        });
+
+        it("should not update when appVersion is the same", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              appVersion: "1.0.2"
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            done();
+          }, 204);
+        });
+      });
+
+      describe("rollout field updates", () => {
+        it("should update rollout for unfinished rollout and set updateRelease to true", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              label: "v3",
+              rollout: 75
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            storage.getPackageHistory(account.id, app.id, deployment.id)
+              .then((updatedHistory: storage.Package[]) => {
+                const targetPackage = updatedHistory.find(pkg => pkg.label === "v3");
+                assert.strictEqual(targetPackage.rollout, 75);
+                done();
+              })
+              .catch(done);
+          }, 200);
+        });
+
+        it("should update rollout to 100 and set updateRelease to true", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              label: "v3",
+              rollout: 100
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            storage.getPackageHistory(account.id, app.id, deployment.id)
+              .then((updatedHistory: storage.Package[]) => {
+                const targetPackage = updatedHistory.find(pkg => pkg.label === "v3");
+                assert.strictEqual(targetPackage.rollout, 100);
+                done();
+              })
+              .catch(done);
+          }, 200);
+        });
+
+        it("should return 409 when trying to update rollout for completed rollout", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              label: "v3",
+              rollout: 25
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            done();
+          }, 409);
+        });
+
+        it("should allow decreasing rollout when updateRelease is already true", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              label: "v3",
+              rollout: 25, 
+              description: "Updated description"
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            done();
+          }, 409);
+        });
+        describe("push one with null rollout", () => {
+          beforeEach(() => {
+            let fourthPackage: storage.Package;
+            fourthPackage = testUtils.makePackage("1.0.3", true, "hash101", "v4");
+            fourthPackage.description = "Fourth package";
+            fourthPackage.isDisabled = true;
+            fourthPackage.isMandatory = true;
+            fourthPackage.rollout = null;
+            fourthPackage.blobUrl = "/resources/test4.zip";
+            fourthPackage.manifestBlobUrl = null;
+            fourthPackage.packageHash = "hash101";
+            fourthPackage.appVersion = "1.0.3";
+            fourthPackage.label = "v4";
+            packageHistory.push(fourthPackage);
+
+            return storage.commitPackage(account.id, app.id, deployment.id, fourthPackage);
+          });
+          it("no relase and unfinished rollout", (done) => {
+            const packageInfo = {
+              packageInfo: {
+                label: "v4",
+                rollout: 100
+              }
+            };
+  
+            PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+              done();
+            }, 409);
+          });
+        });
+        
+      });
+
+      describe("Multiple field updates", () => {
+        it("should update multiple fields in a single request", (done) => {
+          const packageInfo = {
+            packageInfo: {
+              label: "v2",
+              isDisabled: true,
+              isMandatory: true,
+              description: "Updated multiple fields",
+              appVersion: "1.1.0",
+            }
+          };
+
+          PATCH(`/apps/${app.name}/deployments/${deployment.name}/release`, packageInfo, () => {
+            // Verify all fields were updated
+            storage.getPackageHistory(account.id, app.id, deployment.id)
+              .then((updatedHistory: storage.Package[]) => {
+                const targetPackage = updatedHistory.find(pkg => pkg.label === "v2");
+                assert.strictEqual(targetPackage.isDisabled, true);
+                assert.strictEqual(targetPackage.isMandatory, true);
+                assert.strictEqual(targetPackage.description, "Updated multiple fields");
+                assert.strictEqual(targetPackage.appVersion, "1.1.0");
+                done();
+              })
+              .catch(done);
+          }, 200);
+        });
+      });
+
+      describe("Error scenarios", () => {
+        it("should return 404 when deployment does not exist", (done) => {
+          PATCH(`/apps/${app.name}/deployments/nonexistent-deployment/release`, {}, () => {
+            done();
+          }, 404);
+        });
+
+        it("should return 404 when app does not exist", (done) => {
+          PATCH(`/apps/nonexistent-app/deployments/${deployment.name}/release`, {}, () => {
+            done();
+          }, 404);
+        });
+
+        it("should return 404 when deployment has no releases", (done) => {
+          const emptyDeployment = testUtils.makeStorageDeployment();
+          storage.addDeployment(account.id, app.id, emptyDeployment)
+            .then((deploymentId: string) => {
+              PATCH(`/apps/${app.name}/deployments/${emptyDeployment.name}/release`, {}, () => {
+                done();
+              }, 404);
+            });
+        });
+      });
+    });
   });
   // This function wraps the Supertest scaffolding for a simple, non-customizable Get
   function GET(
