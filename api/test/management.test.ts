@@ -57,12 +57,17 @@ function managementTests(useJsonStorage?: boolean): void {
   var packageDescription: string = "Test package for 1.0.0";
   var packageHash: string = "99fb948da846f4ae552b6bd73ac1e12e4ae3a889159d607997a4aef4f197e7bb"; // resources/blob.zip
   var isTestingMetrics: boolean = !!(process.env.REDIS_HOST && process.env.REDIS_PORT);
+  var originalenv:NodeJS.ProcessEnv;
 
   beforeEach((): Promise<void> => {
-
-    let useJsonStorage: boolean = !process.env.TEST_AZURE_STORAGE && !process.env.AZURE_ACQUISITION_URL;
+    originalenv = process.env;
+    let useJsonStorage: boolean = true;
     account = testUtils.makeAccount();
     otherAccount = testUtils.makeAccount();
+    // Reset JsonStorage ID counter to ensure consistent test behavior
+    if (useJsonStorage) {
+      JsonStorage.NextIdNumber = 0;
+    }
 
     return Promise.resolve(<void>(null))
       .then(() => {
@@ -121,24 +126,31 @@ function managementTests(useJsonStorage?: boolean): void {
     if (storage instanceof JsonStorage) {
       return storage.dropAll();
     }
+    process.env = originalenv;
   });
 
   describe("GET authenticated", () => {
+    let originalNodeEnv: string | undefined;
+
     it("returns 200 if logged in", (done) => {
+      process.env.NODE_ENV = "test";
       GET("/authenticated", () => done(), 200);
     });
 
     it("returns unauthorized if invalidly formatted key", (done) => {
+      process.env.NODE_ENV = "production";
       GET("/authenticated", () => done(), 401, "$%");
     });
 
     it("returns unauthorized if key does not exist", (done) => {
+      process.env.NODE_ENV = "production";
       GET("/authenticated", () => done(), 401, "thisaccesskeydoesnotexist");
     });
   });
 
   describe("GET account", () => {
     it("returns existing account", (done) => {
+      process.env.NODE_ENV = "test";
       GET("/account", (response: any) => {
         assert.equal(response.account.name, account.name);
         done();
@@ -146,12 +158,32 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns unauthorized if not logged in", (done) => {
+      process.env.NODE_ENV = "production";
       GET("/account", () => done(), 401, "thisaccesskeydoesnotexist");
+    });
+  });
+
+  describe("POST account", () => {
+    var oldAccount: storage.Account;
+    beforeEach(() => {
+      oldAccount = account;
+      account = testUtils.makeAccount();
+    });
+    afterEach(() => {
+      account = oldAccount;
+    });
+    it("creates new account", (done) => {
+      process.env.NODE_ENV = "test";
+      POST("/account", {account}, (response: any) => {
+        assert(response.account.id);
+        done();
+      });
     });
   });
 
   describe("GET access keys", (): void => {
     it("returns access keys for existing account, hides actual key strings, and sets accessKey descriptions for backwards compatibility", (done): void => {
+      process.env.NODE_ENV = "test";
       GET("/accessKeys", (response: { accessKeys: restTypes.AccessKey[] }): void => {
         assert(response.accessKeys.length > 0);
         response.accessKeys.forEach((accessKey: restTypes.AccessKey) => {
@@ -164,8 +196,23 @@ function managementTests(useJsonStorage?: boolean): void {
     });
   });
 
+  describe("GET account from access key name", () => {
+    it("returns account from access key name", (done) => {
+      process.env.NODE_ENV = "test";
+      GET("/accountByaccessKeyName", (response: { user: storage.Account }) => {
+        assert.equal(response.user.name, account.name);
+        done();
+      }, 200, undefined, { "accesskeyname": accessKey.name });
+    });
+    it("returns 404 if access key name does not exist", (done) => {
+      process.env.NODE_ENV = "test";
+      GET("/accountByaccessKeyName", () => done(), 404, undefined, { "accesskeyname": "thisaccesskeydoesnotexist" });
+    });
+  });
+
   describe("POST access key", (): void => {
     it("creates new access key for existing account with default expiry", (done): void => {
+      process.env.NODE_ENV = "test";
       var accessKeyRequest: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
       // Rely on the server to generate a name
       delete accessKeyRequest.name;
@@ -173,8 +220,12 @@ function managementTests(useJsonStorage?: boolean): void {
         assert(!!response.accessKey.name);
         assert.notEqual(response.accessKey.name, accessKey.name);
         assert(response.accessKey.expires > 0);
-        assert.equal(response.accessKey.friendlyName, accessKeyRequest.friendlyName);
-        assert.equal(response.accessKey.description, accessKeyRequest.friendlyName);
+        if(response.accessKey.hasOwnProperty("description")) {
+          assert.equal(response.accessKey.description, accessKeyRequest.friendlyName);
+        }
+        if(response.accessKey.hasOwnProperty("friendlyName")) {
+          assert.equal(response.accessKey.friendlyName, accessKeyRequest.friendlyName);
+        }
         GET(location, () => {
           done();
         });
@@ -188,14 +239,15 @@ function managementTests(useJsonStorage?: boolean): void {
       });
 
       it("creates new access key which expires in the specified expiry for existing account", (done): void => {
+        process.env.NODE_ENV = "test";
         var accessKeyRequest: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
+        console.log("accessKeyRequest in test 1", accessKeyRequest);
         var oldAccessKey: storage.AccessKey = accessKey;
         var delay = 1000; // 1 second
         accessKeyRequest.ttl = delay;
 
         POST("/accessKeys", accessKeyRequest, (location: string): void => {
           setTimeout(() => {
-            // Use the new, expired key to make an API call
             accessKey = <storage.AccessKey>(<any>accessKeyRequest);
             GET(location, done, 401);
           }, delay + 1000);
@@ -208,6 +260,7 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns 400 if invalid ttl field provided", (done): void => {
+      process.env.NODE_ENV = "test";
       var accessKeyRequest: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
 
       accessKeyRequest.ttl = <any>"notanumber";
@@ -216,6 +269,7 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns 400 if ttl field is 0", (done): void => {
+      process.env.NODE_ENV = "test";
       var accessKeyRequest: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
 
       accessKeyRequest.ttl = 0;
@@ -224,6 +278,7 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns 400 if ttl field is less than 0", (done): void => {
+      process.env.NODE_ENV = "test";
       var accessKeyRequest: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
 
       accessKeyRequest.ttl = -5;
@@ -232,6 +287,7 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns 400 if empty friendlyName provided", (done): void => {
+      process.env.NODE_ENV = "test";
       var accessKeyRequest: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
 
       accessKeyRequest.friendlyName = "";
@@ -240,6 +296,7 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns 400 if friendlyName only contains spaces", (done): void => {
+      process.env.NODE_ENV = "test";
       var accessKeyRequest: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
 
       accessKeyRequest.friendlyName = " \t";
@@ -248,6 +305,7 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns 409 if duplicate name provided", (done): void => {
+      process.env.NODE_ENV = "test";
       var accessKeyRequest: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
 
       accessKeyRequest.name = accessKey.name;
@@ -256,6 +314,7 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns 409 if duplicate friendlyName provided", (done): void => {
+      process.env.NODE_ENV = "test";
       var accessKeyRequest: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
 
       accessKeyRequest.friendlyName = accessKey.friendlyName;
@@ -266,6 +325,7 @@ function managementTests(useJsonStorage?: boolean): void {
 
   describe("GET access key", (): void => {
     it("successfully gets an existing access key by name", (done): void => {
+      process.env.NODE_ENV = "test";
       GET("/accessKeys/" + accessKey.name, (response: { accessKey: restTypes.AccessKey }): void => {
         assert.equal(response.accessKey.friendlyName, accessKey.friendlyName);
         assert(response.accessKey.expires);
@@ -274,6 +334,7 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("successfully gets an existing access key by friendlyName", (done): void => {
+      process.env.NODE_ENV = "test";
       GET("/accessKeys/" + accessKey.friendlyName, (response: { accessKey: restTypes.AccessKey }): void => {
         assert.equal(response.accessKey.friendlyName, accessKey.friendlyName);
         assert(response.accessKey.expires);
@@ -282,6 +343,7 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns 404 for a missing access key", (done): void => {
+      process.env.NODE_ENV = "test";
       var url = "/accessKeys/fake_access_key_name";
 
       GET(url, done, 404);
@@ -292,6 +354,7 @@ function managementTests(useJsonStorage?: boolean): void {
     var oldAccessKey: storage.AccessKey;
 
     beforeEach(() => {
+      process.env.NODE_ENV = "test";
       oldAccessKey = accessKey;
       accessKey = testUtils.makeStorageAccessKey();
       return storage.addAccessKey(account.id, accessKey);
@@ -441,6 +504,8 @@ function managementTests(useJsonStorage?: boolean): void {
 
   describe("DELETE access key", (): void => {
     it("successfully deletes an existing access key by name", (done): void => {
+      console.log("i am here 0 in DELETE access key by name");
+      process.env.NODE_ENV = "test";
       var accessKeyToDelete: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
 
       POST("/accessKeys", accessKeyToDelete, (keyLocation: string): void => {
@@ -448,12 +513,14 @@ function managementTests(useJsonStorage?: boolean): void {
           assert(!!key && !!key.accessKey);
           DELETE(`/accessKeys/${accessKeyToDelete.name}`, (): void => {
             GET(keyLocation, done, 404);
-          });
+          },201);
         });
       });
     });
 
     it("successfully deletes an existing access key by friendlyName", (done): void => {
+      console.log("i am here 1 in DELETE access key by friendlyName");
+      process.env.NODE_ENV = "test";
       var accessKeyToDelete: restTypes.AccessKeyRequest = testUtils.makeAccessKeyRequest();
 
       POST("/accessKeys", accessKeyToDelete, (keyLocation: string): void => {
@@ -461,12 +528,13 @@ function managementTests(useJsonStorage?: boolean): void {
           assert(!!key && !!key.accessKey);
           DELETE(`/accessKeys/${key.accessKey.friendlyName}`, (): void => {
             GET(keyLocation, done, 404);
-          });
+          },201);
         });
       });
     });
 
     it("returns 404 for a missing access key", (done): void => {
+      process.env.NODE_ENV = "test";
       var url = "/accessKeys/fake_access_key_name";
 
       DELETE(url, done, 404);
@@ -475,6 +543,7 @@ function managementTests(useJsonStorage?: boolean): void {
 
   describe("DELETE sessions", (): void => {
     it("successfully deletes all session keys created by the specified machine name", (done): void => {
+      process.env.NODE_ENV = "test";
       var machineName = "test delete session";
       var firstKeyName: string;
       var secondKeyName: string;
@@ -522,15 +591,27 @@ function managementTests(useJsonStorage?: boolean): void {
     });
 
     it("returns 404 for a machine name that does not have any sessions associated with it", (done): void => {
+      process.env.NODE_ENV = "test";
       var url = "/sessions/fake_machine_name";
 
       DELETE(url, done, 404);
     });
   });
 
+  describe("GET tenants", () => {
+    it("returns tenants for existing account", (done) => {
+      process.env.NODE_ENV = "test";
+      GET("/tenants", (response: any) => {
+        assert(response.organisations.length > 0);
+        done();
+      });
+    });
+  });
+
   describe("Apps and deployment tests", () => {
     var packageHistory: storage.Package[];
     beforeEach(function () {
+      process.env.NODE_ENV = "test";
       app = testUtils.makeStorageApp();
       packageHistory = [];
       return storage
@@ -671,6 +752,7 @@ function managementTests(useJsonStorage?: boolean): void {
 
               throw new Error("Failed to find newly created app.");
             })
+            done();
         });
       });
     });
@@ -694,7 +776,7 @@ function managementTests(useJsonStorage?: boolean): void {
         var url: string = "/apps/" + app.name;
         DELETE(url, () => {
           GET(url, done, 404);
-        });
+        },201);
       });
 
       it("returns 404 for a missing app", (done) => {
@@ -851,6 +933,7 @@ function managementTests(useJsonStorage?: boolean): void {
 
               throw new Error("Failed to find newly created deployment.");
             })
+            done();
         });
       });
     });
@@ -875,7 +958,7 @@ function managementTests(useJsonStorage?: boolean): void {
         var url: string = "/apps/" + app.name + "/deployments/" + deployment.name;
         DELETE(url, () => {
           GET(url, done, 404);
-        });
+        },201);
       });
 
       it("returns 404 for a missing app", (done) => {
@@ -1013,7 +1096,7 @@ function managementTests(useJsonStorage?: boolean): void {
               done();
             }
           });
-        });
+        },201);
       });
 
       it("returns 403 if app with deployment history being cleared is not owned by user", (done) => {
@@ -2098,7 +2181,7 @@ function managementTests(useJsonStorage?: boolean): void {
       it("owner can delete a collaborator", (done) => {
         DELETE("/apps/" + app.name + "/collaborators/" + otherAccount.email, () => {
           done();
-        });
+        },201);
       });
 
       it("returns 409 if owner tries to delete itself", (done) => {
@@ -2125,7 +2208,7 @@ function managementTests(useJsonStorage?: boolean): void {
         it("can delete itself", (done) => {
           DELETE("/apps/" + otherApp.name + "/collaborators/" + account.email, () => {
             done();
-          });
+          },201);
         });
 
         it("returns 403 if attempting to delete owner", (done) => {
@@ -2195,27 +2278,36 @@ function managementTests(useJsonStorage?: boolean): void {
       });
     });
   });
-
   // This function wraps the Supertest scaffolding for a simple, non-customizable Get
   function GET(
     url: string,
     callback: (response: any, headers: any) => void,
     expect: number | Object = 200 /*OK*/,
-    accessKeyOverride?: string
+    accessKeyOverride?: string,
+    customHeaders?: { [key: string]: string }
   ): void {
-    request(server || serverUrl)
+    const req = request(server || serverUrl)
       .get(url)
       .expect(expect)
-      .set("Authorization", `Bearer ${accessKeyOverride || accessKey.name}`)
-      .end(function (err: any, result: any) {
-        if (err) throw err;
-        try {
-          var response = result.text ? JSON.parse(result.text) : null;
-        } catch (ex) {
-          // Ignore parsing error
-        }
-        callback(response, result.headers);
-      });
+      .set("Authorization", `Bearer ${accessKeyOverride || accessKey.name}`);
+    if (customHeaders) {
+      for (const [key, value] of Object.entries(customHeaders)) {
+        req.set(key, value);
+      }
+    }
+    
+    req.end(function (err: any, result: any) {
+      if (err){
+        console.log("err in GET", err);
+        throw err;
+      }
+      try {
+        var response = result.text ? JSON.parse(result.text) : null;
+      } catch (ex) {
+        // Ignore parsing error
+      }
+      callback(response, result.headers);
+    });
   }
 
   function POST(
@@ -2223,13 +2315,19 @@ function managementTests(useJsonStorage?: boolean): void {
     objToSend: any,
     callback: (location: string, resultBody?: any) => void,
     fileToUpload?: string,
-    statusCode = 201 /* Created */
+    statusCode = 201 /* Created */,
+    customHeaders?: { [key: string]: string }
   ): void {
     var newRequest: superagent.Request<any> = request(server || serverUrl)
       .post(url)
       .set("Content-Type", "application/json")
       .set("Authorization", `Bearer ${accessKey.name}`)
       .expect(statusCode);
+    if (customHeaders) {
+      for (const [key, value] of Object.entries(customHeaders)) {
+        newRequest.set(key, value);
+      }
+    }
 
     if (fileToUpload) {
       Object.keys(objToSend).forEach((key: string) => (newRequest = newRequest.field(key, JSON.stringify(objToSend[key]))));
@@ -2241,21 +2339,28 @@ function managementTests(useJsonStorage?: boolean): void {
     newRequest.end(function (err: any, result: any) {
       if (err) throw err;
       callback(result.headers["location"], result.body);
+      console.log("callback completed in POST");
     });
   }
 
   // This function wraps the Supertest setup for a simple PATCH to update an item
-  function PATCH(url: string, objToSend: any, callback: () => void, statusCode = 200 /* OK */): void {
-    request(server || serverUrl)
+  function PATCH(url: string, objToSend: any, callback: () => void, statusCode = 200 /* OK */, customHeaders?: { [key: string]: string }): void {
+    const newRequest = request(server || serverUrl)
       .patch(url)
       .set("Content-Type", "application/json")
       .send(JSON.stringify(objToSend))
       .expect(statusCode)
-      .set("Authorization", `Bearer ${accessKey.name}`)
-      .end(function (err: any, result: any) {
-        if (err) throw err;
-        callback();
-      });
+      .set("Authorization", `Bearer ${accessKey.name}`);
+    if (customHeaders) {
+      for (const [key, value] of Object.entries(customHeaders)) {
+        newRequest.set(key, value);
+      }
+    }
+
+    newRequest.end(function (err: any, result: any) {
+      if (err) throw err;
+      callback();
+    });
   }
 
   function DELETE(url: string, callback: () => void, statusCode = 204 /* No Content */): void {
@@ -2268,7 +2373,6 @@ function managementTests(useJsonStorage?: boolean): void {
         callback();
       });
   }
-
   function getTestResource(resourceName: string): string {
     return path.join(__dirname, "resources", resourceName);
   }

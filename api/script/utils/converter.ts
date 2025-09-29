@@ -37,15 +37,13 @@ export function accessKeyRequestFromBody(body: AccessKeyRequest): AccessKeyReque
   if(body.scope !== undefined)  {
     accessKeyRequest.scope = body.scope;
   }
-
-  // This caters to legacy CLIs, before "description" was renamed to "friendlyName".
-  if(body.scope !== undefined)  {
+  if(body.friendlyName !== undefined)  {
     accessKeyRequest.friendlyName = body.friendlyName;
+    accessKeyRequest.friendlyName = accessKeyRequest.friendlyName && accessKeyRequest.friendlyName.trim();
   }
-  
-  accessKeyRequest.friendlyName = accessKeyRequest.friendlyName && accessKeyRequest.friendlyName.trim();
-  accessKeyRequest.description = accessKeyRequest.description;
-
+  if(body.description !== undefined)  {
+    accessKeyRequest.description = body.description;
+  }
   return accessKeyRequest;
 }
 
