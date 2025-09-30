@@ -305,10 +305,6 @@ export class S3Storage implements storage.Storage {
     private setupPromise: Promise<void>;
     public constructor() {
         this.s3 = new S3({
-          endpoint: process.env.S3_ENDPOINT, // LocalStack S3 endpoint
-          s3ForcePathStyle: true,
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
           region: process.env.S3_REGION
         });
         shortid.characters("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-");
