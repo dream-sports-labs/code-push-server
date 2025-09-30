@@ -37,6 +37,8 @@ export enum CommandType {
   sessionList,
   sessionRemove,
   whoami,
+  createPatch,
+  applyPatch
 }
 
 export interface ICommand {
@@ -241,4 +243,16 @@ export type ReleaseHook = (
 export interface ReleaseFile {
   sourceLocation: string; // The current location of the file on disk
   targetLocation: string; // The desired location of the file within the zip
+}
+
+export interface ICreatePatchCommand extends ICommand {
+  oldBundle: string;
+  newBundle: string;
+  patchFile: string;
+}
+
+export interface IApplyPatchCommand extends ICommand {
+  oldBundle: string;
+  patchFile: string;
+  outputBundle: string;
 }

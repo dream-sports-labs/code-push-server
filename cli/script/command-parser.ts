@@ -913,6 +913,24 @@ yargs
 
     addCommonConfiguration(yargs);
   })
+  .command("create-patch", "Create a binary patch between two bundle files", (yargs: yargs.Argv) => {
+    isValidCommandCategory = true;
+    isValidCommand = true;
+    yargs
+      .usage(USAGE_PREFIX + " create-patch path/to/old.bundle path/to/new.bundle path/to/bundle.patch")
+      .demand(/*count*/ 3, /*max*/ 3) // Require exactly three non-option arguments
+      .example("create-patch path/to/old.bundle path/to/new.bundle path/to/bundle.patch", "Create a patch from old.bundle to new.bundle and save it as bundle.patch");
+    addCommonConfiguration(yargs);
+  })
+  .command("apply-patch", "Apply a binary patch to a bundle file", (yargs: yargs.Argv) => {
+    isValidCommandCategory = true;
+    isValidCommand = true;
+    yargs
+      .usage(USAGE_PREFIX + " apply-patch path/to/old.bundle path/to/bundle.patch path/to/new.bundle")
+      .demand(/*count*/ 3, /*max*/ 3) // Require exactly three non-option arguments
+      .example("apply-patch path/to/old.bundle path/to/bundle.patch path/to/new.bundle", "Apply bundle.patch to old.bundle and save the result as new.bundle");
+    addCommonConfiguration(yargs);
+  })
   .command("whoami", "Display the account info for the current login session", (yargs: yargs.Argv) => {
     isValidCommandCategory = true;
     isValidCommand = true;
@@ -1335,6 +1353,26 @@ export function createCommand(): cli.ICommand {
 
       case "whoami":
         cmd = { type: cli.CommandType.whoami };
+        break;
+
+      case "create-patch":
+        if (arg1 && arg2 && arg3) {
+          cmd = { type: cli.CommandType.createPatch };
+          const createPatchCommand = <cli.ICreatePatchCommand>cmd;
+          createPatchCommand.oldBundle = arg1;
+          createPatchCommand.newBundle = arg2;
+          createPatchCommand.patchFile = arg3;
+        }
+        break;
+
+      case "apply-patch":
+        if (arg1 && arg2 && arg3) {
+          cmd = { type: cli.CommandType.applyPatch };
+          const applyPatchCommand = <cli.IApplyPatchCommand>cmd;
+          applyPatchCommand.oldBundle = arg1;
+          applyPatchCommand.patchFile = arg2;
+          applyPatchCommand.outputBundle = arg3;
+        }
         break;
     }
 

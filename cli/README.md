@@ -23,6 +23,17 @@ To run the CodePush CLI, follow these steps:
 
 After installing CodePush CLI globally, it will be available under `code-push-standalone`.
 
+## Binary Patch Operations
+
+The CLI includes binary diff capability for creating efficient updates between application bundles:
+
+```shell
+# Create a binary patch between two bundles
+code-push-standalone create-patch .dota/android/base/index.android.bundle .dota/android/new/index.android.bundle bundle.patch
+```
+
+For detailed information about the diff algorithm implementation and customization options, see the [bsdiff README](bsdiff/README.md).
+
 ## Account Management
 
 Before you can begin releasing app updates, you need to create a CodePush account. You can do this by simply running the following command once you've installed the CLI:
