@@ -1,14 +1,13 @@
 import * as storage from "./storage";
-import { S3, CloudFront} from "aws-sdk";
+import { S3 } from "aws-sdk";
 import {HeadBucketRequest, CreateBucketRequest} from "aws-sdk/clients/s3"
-import { getSignedUrl } from "aws-cloudfront-sign";
 import * as stream from "stream";
 import { Sequelize, DataTypes } from "sequelize";
-//import * from nanoid;
 import * as shortid from "shortid";
 import * as utils from "../utils/common";
 import * as mysql from "mysql2/promise";
 import * as fs from "fs";
+import { DB_HOST, DB_PASS, S3_BUCKET_NAME, S3_CONFIG, S3_CREATE_BUCKET_PARAMS, S3_HEAD_BUCKET_PARAMS, SEQUELIZE_CONFIG } from "./aws-storage.constants";
 
 //Creating Access Key
 export function createAccessKey(sequelize: Sequelize) {
@@ -217,7 +216,7 @@ export function createAppPointer(sequelize: Sequelize) {
 }
 
 
-export function createModelss(sequelize: Sequelize) {
+export function createModels(sequelize: Sequelize) {
   // Create models and register them
   const Tenant = createTenant(sequelize);
   const Package = createPackage(sequelize);
@@ -293,60 +292,51 @@ export const MODELS = {
   TENANT : "tenant"
 }
 
-const DB_NAME = "codepushdb"
-const DB_USER = "codepush"
-const DB_PASS = "root"
-const DB_HOST = "localhost"
 
 export class S3Storage implements storage.Storage {
     private s3: S3;
-    private bucketName : string = process.env.S3_BUCKETNAME || "codepush-local-bucket";
-    private sequelize:Sequelize;
-    private setupPromise: Promise<void>;
+    private s3SetupDone = false;
+    private sequelizeSetupDone = false;
+    private sequelize: Sequelize;
+    private setupPromise: Promise<null | Error>;
+
     public constructor() {
-        this.s3 = new S3({
-          endpoint: process.env.S3_ENDPOINT, // LocalStack S3 endpoint
-          s3ForcePathStyle: true,
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-          region: process.env.S3_REGION
-        });
         shortid.characters("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-");
 
-        // Ensure the database exists, then initialize Sequelize
-        this.setupPromise = this.createDatabaseIfNotExists().then(() => {
-          this.sequelize = new Sequelize({
-            database: process.env.DB_NAME || DB_NAME,
-            dialect: 'mysql',
-            replication: {
-                write: {
-                    host: process.env.DB_HOST || DB_HOST,
-                    username: process.env.DB_USER || DB_USER,
-                    password: process.env.DB_PASS || DB_PASS
-                },
-                read: [
-                    {
-                        host: process.env.DB_HOST_READER,
-                        username: process.env.DB_USER || DB_USER,
-                        password: process.env.DB_PASS || DB_PASS
-                    }
-                ]
-            },
-            pool: {
-                max: 5,
-                min: 1,
-                acquire: 10000,
-                idle: 10000,
-                evict: 15000,
-                maxUses: 100000 
-              }
-            });
-          return this.setup();
-      });   
+        const isDbReady = S3Storage.createDatabaseIfNotExists();
+        if (!isDbReady) {
+          throw new Error("[S3Storage] constructore() database setup failed");
+        }
+
+        this.setupPromise = new Promise(async (resolve, reject) => {
+          try {
+            if (!this.s3SetupDone) {
+              await this.setupS3()
+              this.s3SetupDone = true;
+            }
+          } catch (error) {
+            console.log("[S3Storage] constructor() setupS3 error", error);
+          }
+
+          try {
+            if (!this.sequelizeSetupDone) {
+              await this.setupSequelize()
+              this.sequelizeSetupDone = true;
+            }
+          } catch (error) {
+            console.log("[S3Storage] constructor() setupSequelize error", error);
+          }
+
+          if (this.s3SetupDone && this.sequelizeSetupDone) {
+            console.log("[S3Storage] constructor() setup complete");
+            resolve(null);
+          } else {
+            reject(new Error("[S3Storage] constructor() setup failed"));
+          }
+        })
     }
 
-    private async createDatabaseIfNotExists(): Promise<void> {
-
+    private static async createDatabaseIfNotExists(): Promise<boolean> {
       try {
           const connection = await mysql.createConnection({
               host: process.env.DB_HOST || DB_HOST,
@@ -355,59 +345,53 @@ export class S3Storage implements storage.Storage {
           });
 
           await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\`;`);
-          console.log(`Database "${process.env.DB_NAME}" ensured.`);
+          console.log(`[S3Storage] createDatabaseIfNotExists "${process.env.DB_NAME}" ensured.`);
           await connection.end();
+
+          return true;
       } catch (error) {
-          console.error("Error creating database:", error);
-          throw error;
+          console.error("[S3Storage] createDatabaseIfNotExists error creating database:", error);
+          return false;
       }
   }
 
-    private setup(): Promise<void> {
-      let headBucketParams: HeadBucketRequest = {
-          Bucket: this.bucketName,
-      };
-
-      let createBucketParams: CreateBucketRequest = {
-          Bucket: this.bucketName,
-      };
-
-      return this.s3.headBucket(headBucketParams).promise()
-        .catch((err) => {
-          if (err.code === 'NotFound' || err.code === 'NoSuchBucket') {
-            console.log(`Bucket ${this.bucketName} does not exist, creating it...`);
-            return this.s3.createBucket(createBucketParams).promise();
-          } else if (err.code === 'Forbidden') {
-            console.error('Forbidden: Check your credentials and S3 endpoint');
-            throw err;
-          } else {
-            throw err;
-          }
-        })
-        .then(() => {
-          return this.sequelize.authenticate();
-        })
-        .then(() => {
-          const models = createModelss(this.sequelize);
-          console.log("Models registered");
-          // return this.sequelize.sync();
-        })
-        .then(() => {
-          console.log("Sequelize models synced");
-          console.log(this.sequelize.models);
-        })
-        .catch((error) => {
-          console.error('Error during setup:', error);
-          throw error;
-        });
-  }
+    private async setupS3(): Promise<void> {
+      console.log("[S3Storage] setupS3() invoked with s3 config",  JSON.stringify(S3_CONFIG, null, 2));
+      console.log("[S3Storage] setupS3() headBucketParams", JSON.stringify(S3_HEAD_BUCKET_PARAMS, null, 2));
+      console.log("[S3Storage] setupS3() createBucketParams", JSON.stringify(S3_CREATE_BUCKET_PARAMS, null, 2));
       
-
-    public reinitialize(): Promise<void> {
-      console.log("Re-initializing AWS storage");
-      return this.setup();
+      this.s3 = new S3(S3_CONFIG);
+      try {
+        await this.s3.headBucket(S3_HEAD_BUCKET_PARAMS)
+      } catch (err) {
+        console.error("[S3Storage] setupS3() headBucket error", err);
+        if (err.code === 'NotFound' || err.code === 'NoSuchBucket') {
+          console.log(`[S3Storage] setupS3() Bucket ${S3_BUCKET_NAME} does not exist, creating it...`);
+          await this.s3.createBucket(S3_CREATE_BUCKET_PARAMS).promise();
+        } else if (err.code === 'Forbidden') {
+          console.error('[S3Storage] setupS3() Forbidden: Check your credentials and S3 endpoint', err);
+          throw err;
+        } else {
+          console.error('[S3Storage] setupS3() Error checking bucket existence:', err);
+          throw err;
+        }
+      }
     }
-  
+
+    private async setupSequelize(): Promise<void> {
+      this.sequelize = new Sequelize(SEQUELIZE_CONFIG);
+      console.log("[S3Storage] Sequelize initialized", JSON.stringify(SEQUELIZE_CONFIG, null, 2));
+
+      console.log("[S3Storage] Sequelize authenticate");
+      await this.sequelize.authenticate();
+
+      createModels(this.sequelize);
+      console.log("[S3Storage] Sequelize models registered");
+      
+      // await this.sequelize.sync();
+      // console.log("[S3Storage] Sequelize models synced");
+    }
+ 
     public checkHealth(): Promise<void> {
       return new Promise<void>((resolve, reject) => {
         this.setupPromise
@@ -421,20 +405,34 @@ export class S3Storage implements storage.Storage {
       });
     }
   
-    public addAccount(account: storage.Account): Promise<string> {
-        account = storage.clone(account); // pass by value
-        account.id = shortid.generate();
-        return this.setupPromise
-          .then(() => {
-            return this.sequelize.models[MODELS.ACCOUNT].findOrCreate({where: {id :account.id}, defaults: {
-              ...account
-            }}); // Successfully fails if duplicate email
-          })
-          .then(() => {
-            return account.id;
-          })
-          .catch(S3Storage.storageErrorHandler);
+    public async addAccount(account: storage.Account): Promise<string> {
+      
+      try {
+        
+        // const tempUser = await this.sequelize.models[MODELS.ACCOUNT].findOne({where: {id :clonedAccount.id}})
+        // if (tempUser) {
+          //   console.log("__DEV__ S3Storage: addAccount Successfully fetched account:", clonedAccount); // Debug log
+          // } else {
+            //   console.error("__DEV__ S3Storage: addAccount Error fetching account:"); // Debug log
+            // }
+        const isSetupDone = await this.setupPromise; 
+        if (isSetupDone instanceof Error) {
+          return Promise.reject(isSetupDone);
+        }  
+            
+        const clonedAccount = storage.clone(account); // pass by value
+        clonedAccount.id = shortid.generate();
+        console.log("__DEV__ S3Storage: addAccount Adding account:", clonedAccount); // Debug log
+        const user = await this.sequelize.models[MODELS.ACCOUNT].findOrCreate({where: {id :clonedAccount.id}, defaults: {
+          ...clonedAccount
+        }});
+
+        return (user as unknown as any)?.id
+        
+      } catch (error) {
+        console.log("__DEV__ S3Storage: addAccount Error adding account:", error); // Debug log
       }
+    }
   
     public getAccount(accountId: string): Promise<storage.Account> {
       console.log("Fetching account for accountId:", accountId); // Debug log
@@ -452,13 +450,20 @@ export class S3Storage implements storage.Storage {
         });
     }
   
-    public getAccountByEmail(email: string): Promise<storage.Account> {
-        return this.setupPromise
-            .then(async () => {
-              const account = await this.sequelize.models[MODELS.ACCOUNT].findOne({where: {email : email}})
-              //Fix this error code
-              return account !== null ? Promise.resolve(account.dataValues) : Promise.reject({code: 1})
-            })
+    public async getAccountByEmail(email: string): Promise<storage.Account> {
+      console.log("__DEV__ getAccountByEmail: start");
+      try {
+      const isSetupDone = await this.setupPromise; 
+      if (isSetupDone instanceof Error) {
+        return Promise.reject(isSetupDone);
+      }  
+            
+      const account = await this.sequelize.models[MODELS.ACCOUNT].findOne({where: {email : email}})
+      console.log("__DEV__ getAccountByEmail: account fetch result:", account ? account.dataValues : null);
+      return account !== null ? Promise.resolve(account.dataValues) : Promise.reject({code: 1234})
+      } catch (error) {
+        console.log("__DEV__ S3Storage: getAccountByEmail Error getting account:", error); // Debug log
+      }
     }
   
     public updateAccount(email: string, updateProperties: storage.Account): Promise<void> {
@@ -1263,7 +1268,7 @@ export class S3Storage implements storage.Storage {
         // Upload the buffer to S3
         return this.s3
           .putObject({
-            Bucket: this.bucketName,
+            Bucket: S3_BUCKET_NAME,
             Key: blobId,
             Body: buffer,
             ContentType: 'application/zip', // Assume all deployments are zipped
@@ -1301,7 +1306,7 @@ export class S3Storage implements storage.Storage {
             if(process.env.NODE_ENV === "development") {
               // Get the signed URL from S3
               return this.s3.getSignedUrlPromise('getObject', {
-                Bucket: this.bucketName,
+                Bucket: S3_BUCKET_NAME,
                 Key: blobId,
                 Expires: 60 * 60 * 24000, // URL valid for 1 hour
               });
@@ -1322,7 +1327,7 @@ export class S3Storage implements storage.Storage {
           .then(() => {
             // Delete the blob from S3
             return this.s3.deleteObject({
-              Bucket: this.bucketName,
+              Bucket: S3_BUCKET_NAME,
               Key: blobId,
             }).promise();
           })
@@ -1375,7 +1380,7 @@ export class S3Storage implements storage.Storage {
     
         // Use AWS SDK to download the blob from S3
         this.s3
-          .getObject({ Bucket: this.bucketName, Key: `${deploymentId}/history.json` })
+          .getObject({ Bucket: S3_BUCKET_NAME, Key: `${deploymentId}/history.json` })
           .promise()
           .then((data) => {
             const packageHistory = JSON.parse(data.Body.toString());
@@ -1394,7 +1399,7 @@ export class S3Storage implements storage.Storage {
     
         this.s3
           .deleteObject({
-            Bucket: this.bucketName,  // Your S3 bucket name
+            Bucket: S3_BUCKET_NAME,  // Your S3 bucket name
             Key: blobId               // The blob (file) ID to be deleted
           })
           .promise()
@@ -1414,7 +1419,7 @@ export class S3Storage implements storage.Storage {
     
         this.s3
           .putObject({
-            Bucket: this.bucketName,
+            Bucket: S3_BUCKET_NAME,
             Key: `${deploymentId}/history.json`,
             Body: content,
             ContentType: "application/json",
