@@ -574,6 +574,12 @@ export function execute(command: cli.ICommand) {
       case cli.CommandType.whoami:
         return whoami(command);
 
+      case cli.CommandType.createPatch:
+        return createPatch(<cli.ICreatePatchCommand>command);
+
+      case cli.CommandType.applyPatch:
+        return applyPatch(<cli.IApplyPatchCommand>command);
+
       default:
         // We should never see this message as invalid commands should be caught by the argument parser.
         throw new Error("Invalid command:  " + JSON.stringify(command));
@@ -1643,4 +1649,60 @@ function getSdk(accessKey: string, headers: Headers, customServerUrl: string): A
   });
 
   return sdk;
+}
+
+function createPatch(command: cli.ICreatePatchCommand): Promise<void> {
+  return Q.Promise<void>((resolve, reject) => {
+    const scriptPath = path.join(__dirname, "patch-scripts", "create-patch.sh");
+    const args = [command.oldBundle, command.newBundle, command.patchFile];
+    
+    log(`Creating patch with fileName: bundle.patch from ${command.oldBundle} to ${command.newBundle}`);
+    log(`Patch will be saved to: ${command.patchFile}`);
+    
+    const child = childProcess.spawn("bash", [scriptPath, ...args], {
+      stdio: "inherit",
+      cwd: process.cwd()
+    });
+    
+    child.on("close", (code: number) => {
+      if (code === 0) {
+        log("Patch created successfully!");
+        resolve();
+      } else {
+        reject(new Error(`Patch creation failed with exit code ${code}`));
+      }
+    });
+    
+    child.on("error", (error: Error) => {
+      reject(new Error(`Failed to start patch creation: ${error.message}`));
+    });
+  });
+}
+
+function applyPatch(command: cli.IApplyPatchCommand): Promise<void> {
+  return Q.Promise<void>((resolve, reject) => {
+    const scriptPath = path.join(__dirname, "patch-scripts", "apply-patch.sh");
+    const args = [command.oldBundle, command.patchFile, command.outputBundle];
+    
+    log(`Applying patch to ${command.oldBundle}`);
+    log(`Output will be saved to: ${command.outputBundle}`);
+    
+    const child = childProcess.spawn("bash", [scriptPath, ...args], {
+      stdio: "inherit",
+      cwd: process.cwd()
+    });
+    
+    child.on("close", (code: number) => {
+      if (code === 0) {
+        log("Patch applied successfully!");
+        resolve();
+      } else {
+        reject(new Error(`Patch application failed with exit code ${code}`));
+      }
+    });
+    
+    child.on("error", (error: Error) => {
+      reject(new Error(`Failed to start patch application: ${error.message}`));
+    });
+  });
 }
