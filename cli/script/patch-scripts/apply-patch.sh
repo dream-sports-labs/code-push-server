@@ -6,7 +6,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Print detailed usage
 print_usage() {
     echo "Usage: $0 <old_bundle> <patch_file> <output_bundle>"
-    echo "Example: $0 originalBundle/index.android.bundle patch/new.patch patchedBundle/index.android.bundle"
+    echo "Example: $0 originalBundle/index.android.bundle patch/bundle.patch patchedBundle/index.android.bundle"
     echo ""
     echo "Arguments:"
     echo "  old_bundle    - Path to the original bundle file"

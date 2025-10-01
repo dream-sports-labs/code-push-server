@@ -1656,7 +1656,7 @@ function createPatch(command: cli.ICreatePatchCommand): Promise<void> {
     const scriptPath = path.join(__dirname, "patch-scripts", "create-patch.sh");
     const args = [command.oldBundle, command.newBundle, command.patchFile];
     
-    log(`Creating patch from ${command.oldBundle} to ${command.newBundle}...`);
+    log(`Creating patch with fileName: bundle.patch from ${command.oldBundle} to ${command.newBundle}`);
     log(`Patch will be saved to: ${command.patchFile}`);
     
     const child = childProcess.spawn("bash", [scriptPath, ...args], {

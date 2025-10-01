@@ -917,9 +917,9 @@ yargs
     isValidCommandCategory = true;
     isValidCommand = true;
     yargs
-      .usage(USAGE_PREFIX + " create-patch path/to/old.bundle path/to/new.bundle path/to/bundle.patch")
+      .usage(USAGE_PREFIX + " create-patch path/to/old.bundle path/to/new.bundle directory/to/save/bundle.patch")
       .demand(/*count*/ 3, /*max*/ 3) // Require exactly three non-option arguments
-      .example("create-patch path/to/old.bundle path/to/new.bundle path/to/bundle.patch", "Create a patch from old.bundle to new.bundle and save it as bundle.patch");
+      .example("create-patch path/to/old.bundle path/to/new.bundle directory/to/save/bundle.patch", "Create a patch from old.bundle to new.bundle and save it as bundle.patch");
     addCommonConfiguration(yargs);
   })
   .command("apply-patch", "Apply a binary patch to a bundle file", (yargs: yargs.Argv) => {

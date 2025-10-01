@@ -5,22 +5,31 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [ "$#" -ne 3 ]; then
     echo "Usage: $0 <old_bundle> <new_bundle> <patch_file>"
-    echo "Example: $0 originalBundle/index.android.bundle newBundle/index.android.bundle patch/new.patch"
+    echo "Example: $0 path/to/old.bundle path/to/new.bundle directory/to/bundle.patch"
     exit 1
 fi
 
 # Convert to absolute paths
 OLD_BUNDLE="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 NEW_BUNDLE="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
-PATCH_FILE="$(cd "$(dirname "$3")" 2>/dev/null && pwd || echo "$(pwd)/$(dirname "$3")")/$(basename "$3")"
+
+# Check if third argument is a file path
+if [[ -f "$3" ]]; then
+    echo "Error: Third argument must be a directory path, not a file path"
+    exit 1
+fi
+
+PATCH_DIR="$(cd "$3" 2>/dev/null && pwd || echo "$(pwd)/$3")"
+PATCH_FILE="$PATCH_DIR/bundle.patch"
 
 echo "Using absolute paths:"
 echo "Old bundle: $OLD_BUNDLE"
 echo "New bundle: $NEW_BUNDLE"
+echo "Patch directory: $PATCH_DIR"
 echo "Patch file: $PATCH_FILE"
 
 # Create patch directory if it doesn't exist
-mkdir -p "$(dirname "$PATCH_FILE")"
+mkdir -p "$PATCH_DIR"
 
 # Create the patch using bsdiff43
 "$SCRIPT_DIR/../bsdiff/bsdiff43" diff "$OLD_BUNDLE" "$NEW_BUNDLE" "$PATCH_FILE"
