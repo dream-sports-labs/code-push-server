@@ -1209,9 +1209,13 @@ export class S3Storage implements storage.Storage {
         return this.setupPromise
         .then(async () => {
           for (const appPackage of history) {
-            // Find the existing package in the table
+            // Find the existing package in the table using unique label and packageHash for data integrity
             const existingPackage = await this.sequelize.models[MODELS.PACKAGE].findOne({
-              where: { deploymentId: deploymentId, packageHash: appPackage.packageHash },
+              where: { 
+                deploymentId: deploymentId, 
+                label: appPackage.label,
+                packageHash: appPackage.packageHash
+              },
             });
     
             if (existingPackage) {
