@@ -305,10 +305,6 @@ export class S3Storage implements storage.Storage {
     private setupPromise: Promise<void>;
     public constructor() {
         this.s3 = new S3({
-          endpoint: process.env.S3_ENDPOINT, // LocalStack S3 endpoint
-          s3ForcePathStyle: true,
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
           region: process.env.S3_REGION
         });
         shortid.characters("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-");
@@ -1209,9 +1205,13 @@ export class S3Storage implements storage.Storage {
         return this.setupPromise
         .then(async () => {
           for (const appPackage of history) {
-            // Find the existing package in the table
+            // Find the existing package in the table using unique label and packageHash for data integrity
             const existingPackage = await this.sequelize.models[MODELS.PACKAGE].findOne({
-              where: { deploymentId: deploymentId, packageHash: appPackage.packageHash },
+              where: { 
+                deploymentId: deploymentId, 
+                label: appPackage.label,
+                packageHash: appPackage.packageHash
+              },
             });
     
             if (existingPackage) {
