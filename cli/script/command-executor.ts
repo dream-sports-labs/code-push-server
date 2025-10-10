@@ -1681,11 +1681,10 @@ function createPatch(command: cli.ICreatePatchCommand): Promise<void> {
 function applyPatch(command: cli.IApplyPatchCommand): Promise<void> {
   return Q.Promise<void>((resolve, reject) => {
     const scriptPath = path.join(__dirname, "patch-scripts", "apply-patch.sh");
-    const args = [command.oldBundle, command.patchFile, command.outputBundle];
+    const args = [command.oldBundle, command.patchFile, command.outputBundle, command.isPatchCompressed];
     
     log(`Applying patch to ${command.oldBundle}`);
     log(`Output will be saved to: ${command.outputBundle}`);
-    
     const child = childProcess.spawn("bash", [scriptPath, ...args], {
       stdio: "inherit",
       cwd: process.cwd()

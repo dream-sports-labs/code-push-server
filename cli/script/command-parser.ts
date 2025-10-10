@@ -942,8 +942,15 @@ yargs
     isValidCommand = true;
     yargs
       .usage(USAGE_PREFIX + " apply-patch path/to/old.bundle path/to/bundle.patch path/to/new.bundle")
-      .demand(/*count*/ 3, /*max*/ 3) // Require exactly three non-option arguments
-      .example("apply-patch path/to/old.bundle path/to/bundle.patch path/to/new.bundle", "Apply bundle.patch to old.bundle and save the result as new.bundle");
+      .demand(/*count*/ 3, /*max*/ 4) // Require exactly three non-option arguments
+      .example("apply-patch path/to/old.bundle path/to/bundle.patch path/to/new.bundle", "Apply bundle.patch to old.bundle and save the result as new.bundle")
+      .option("isPatchCompressed", {
+        alias: "c",
+        default: false,
+        demand: false,
+        description: "Specifies whether the patch file is compressed. It helps to determine the read mode for the patch file. By default it is false.",
+        type: "boolean",
+      });
     addCommonConfiguration(yargs);
   })
   .command("whoami", "Display the account info for the current login session", (yargs: yargs.Argv) => {
@@ -1389,6 +1396,7 @@ export function createCommand(): cli.ICommand {
           applyPatchCommand.oldBundle = arg1;
           applyPatchCommand.patchFile = arg2;
           applyPatchCommand.outputBundle = arg3;
+          applyPatchCommand.isPatchCompressed = argv["isPatchCompressed"] as any;
         }
         break;
     }

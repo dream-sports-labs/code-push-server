@@ -23,6 +23,10 @@ int main(int argc, char *argv[]) {
         argv[1] = argv[0];
         return main_bsdiff(argc - 1, argv + 1);
     } else if (strcmp(argv[1], "patch") == 0) {
+        if (argc != 6) {  // Program name + patch + 3 files + compression
+            fprintf(stderr, "Usage: %s patch oldfile newfile patchfile isPatchCompressed\n", argv[0]);
+            return 1;
+        }
         // Shift arguments to match main_bspatch expectations
         argv[1] = argv[0];
         return main_bspatch(argc - 1, argv + 1);

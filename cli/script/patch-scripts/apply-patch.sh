@@ -5,8 +5,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Print detailed usage
 print_usage() {
-    echo "Usage: $0 <old_bundle> <patch_file> <output_bundle>"
-    echo "Example: $0 originalBundle/index.android.bundle patch/bundle.patch patchedBundle/index.android.bundle"
+    echo "Usage: $0 <old_bundle> <patch_file> <output_bundle> <is_patch_compressed>"
+    echo "Example: $0 originalBundle/index.android.bundle patch/bundle.patch patchedBundle/index.android.bundle false"
     echo ""
     echo "Arguments:"
     echo "  old_bundle    - Path to the original bundle file"
@@ -17,7 +17,7 @@ print_usage() {
 }
 
 # Check number of arguments
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 4 ]; then
     echo "Error: Incorrect number of arguments"
     print_usage
     exit 1
@@ -27,6 +27,7 @@ fi
 OLD_BUNDLE="$1"
 PATCH_FILE="$2"
 OUTPUT_BUNDLE="$3"
+IS_PATCH_COMPRESSED="$4"
 
 # If paths are relative, make them absolute from current directory
 if [[ ! "$OLD_BUNDLE" = /* ]]; then
@@ -95,7 +96,7 @@ fi
 
 # Apply the patch using bsdiff43
 echo "Applying patch..."
-"$SCRIPT_DIR/../bsdiff/bsdiff43" patch "$OLD_BUNDLE" "$OUTPUT_BUNDLE" "$PATCH_FILE"
+"$SCRIPT_DIR/../../../bsdiff/bsdiff43" patch "$OLD_BUNDLE" "$OUTPUT_BUNDLE" "$PATCH_FILE" "$IS_PATCH_COMPRESSED"
 
 if [ $? -eq 0 ]; then
     echo "Successfully applied patch:"
