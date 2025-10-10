@@ -276,6 +276,7 @@ code-push-standalone release <appName> <updateContents> <targetBinaryVersion>
 [--mandatory]
 [--noDuplicateReleaseError]
 [--rollout <rolloutPercentage>]
+[--compression <'brotli' | 'deflate'>]
 ```
 
 #### App name parameter

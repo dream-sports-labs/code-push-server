@@ -9,6 +9,8 @@ import superagent = require("superagent");
 import * as recursiveFs from "recursive-fs";
 import * as yazl from "yazl";
 import slash = require("slash");
+import * as zlib from "zlib";
+import * as progress from "progress";
 
 const ORG_FILE_PATH = path.resolve(__dirname, 'organisations.json');
 
@@ -381,7 +383,8 @@ class AccountManager {
     filePath: string,
     targetBinaryVersion: string,
     updateMetadata: PackageInfo,
-    uploadProgressCallback?: (progress: number) => void
+    uploadProgressCallback?: (progress: number) => void,
+    compression: string = 'brotli'
   ): Promise<void> {
     return Promise<void>((resolve, reject, notify) => {
       updateMetadata.appVersion = targetBinaryVersion;
@@ -392,7 +395,7 @@ class AccountManager {
       this.attachCredentials(request);
 
       const getPackageFilePromise = Q.Promise((resolve, reject) => {
-        this.packageFileFromPath(filePath)
+        this.packageFileFromPath(filePath, compression)
           .then((result) => {
             resolve(result);
           })
@@ -479,7 +482,7 @@ class AccountManager {
     ).then(() => null);
   }
 
-  private packageFileFromPath(filePath: string) {
+  private packageFileFromPath(filePath: string, compression: string) {
     let getPackageFilePromise: Promise<PackageFile>;
     if (fs.lstatSync(filePath).isDirectory()) {
       getPackageFilePromise = Promise<PackageFile>((resolve: (file: PackageFile) => void, reject: (reason: Error) => void): void => {
@@ -497,28 +500,72 @@ class AccountManager {
           const writeStream: fs.WriteStream = fs.createWriteStream(fileName);
 
           zipFile.outputStream
-            .pipe(writeStream)
-            .on("error", (error: Error): void => {
-              reject(error);
-            })
-            .on("close", (): void => {
-              filePath = path.join(process.cwd(), fileName);
+          .pipe(writeStream)
+          .on("error", (error: Error): void => {
+            reject(error);
+          })
+          .on("close", (): void => {
+            filePath = path.join(process.cwd(), fileName);
 
-              resolve({ isTemporary: true, path: filePath });
-            });
+            resolve({ isTemporary: true, path: filePath });
+          });
 
-          for (let i = 0; i < files.length; ++i) {
-            const file: string = files[i];
-            // yazl does not like backslash (\) in the metadata path.
-            const relativePath: string = slash(path.relative(baseDirectoryPath, file));
+          try {
+            if (compression === 'brotli') {
 
-            zipFile.addFile(file, relativePath);
+              const progressBar = new progress('Compressing: [:bar] :current/:total files processed', {
+                complete: '=',
+                incomplete: ' ',
+                width: 50,
+                total: files.length + 1
+              });
+              let lastTotalProgress = 0;
+              const uploadProgress = (currentProgress: number): void => {
+                progressBar.tick(currentProgress - lastTotalProgress);
+                lastTotalProgress = currentProgress;
+              };
+
+              // For Brotli, compress each file individually
+              for (let i = 0; i < files.length; ++i) {
+                const file: string = files[i];
+                const relativePath: string = slash(path.relative(baseDirectoryPath, file));
+                const fileContent = fs.readFileSync(file);
+                
+                // Create Brotli compressed content
+                const brotliStream = zlib.createBrotliCompress({
+                  params: {
+                    [zlib.constants.BROTLI_PARAM_QUALITY]: 11  // Maximum compression
+                  }
+                });
+
+                // Add compressed content to zip
+                zipFile.addReadStream(brotliStream, `${relativePath}.br`, {
+                  compress: false  // Already compressed with Brotli
+                });
+
+                // Write content to stream
+                brotliStream.end(fileContent);
+                uploadProgress(i + 1);
+              }
+            } else {
+              for (let i = 0; i < files.length; ++i) {
+                const file: string = files[i];
+                // yazl does not like backslash (\) in the metadata path.
+                const relativePath: string = slash(path.relative(baseDirectoryPath, file));
+    
+                zipFile.addFile(file, relativePath);
+              }
+            }
+
+          } catch (err) {
+            reject(err);
           }
 
           zipFile.end();
         });
       });
     } else {
+      console.log('Provided file path is a file. Ignoring compression.');
       getPackageFilePromise = Q({ isTemporary: false, path: filePath });
     }
     return getPackageFilePromise;

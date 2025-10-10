@@ -29,6 +29,8 @@
 
 #include <limits.h>
 #include <string.h>
+#include <bzlib.h>
+#include <stdbool.h>
 
 #define MIN(x,y) (((x)<(y)) ? (x) : (y))
 
@@ -366,23 +368,42 @@ static int raw_write(struct bsdiff_stream* stream, const void* buffer, int size)
     return (fwrite(buffer, 1, size, fp) == size) ? 0 : -1;
 }
 
+static int bz2_write(struct bsdiff_stream* stream, const void* buffer, int size)
+{
+	int bz2err;
+	BZFILE* bz2;
+
+	bz2 = (BZFILE*)stream->opaque;
+	BZ2_bzWrite(&bz2err, bz2, (void*)buffer, size);
+	if (bz2err != BZ_STREAM_END && bz2err != BZ_OK)
+		return -1;
+
+	return 0;
+}
+
 int main(int argc,char *argv[])
 {
 	int fd;
-	// int bz2err;
+	int bz2err;
 	uint8_t *old,*new;
 	off_t oldsize,newsize;
 	uint8_t buf[8];
 	FILE * pf;
 	struct bsdiff_stream stream;
-	// BZFILE* bz2;
+	BZFILE* bz2;
+	bool useBz2 = false;
 
-	// memset(&bz2, 0, sizeof(bz2));
+	memset(&bz2, 0, sizeof(bz2));
 	stream.malloc = malloc;
 	stream.free = free;
-	stream.write = raw_write;
 
-	if(argc!=4) errx(1,"usage: %s oldfile newfile patchfile\n",argv[0]);
+	if(argc!=5) errx(1,"usage: %s oldfile newfile patchfile compression\n",argv[0]);
+
+	if (strcmp(argv[4], "true") == 0) {
+		useBz2 = true;
+	}
+
+	stream.write = useBz2 ? bz2_write : raw_write;
 
 	/* Allocate oldsize+1 bytes instead of oldsize bytes to ensure
 		that we never try to malloc(0) and get a NULL pointer */
@@ -407,6 +428,10 @@ int main(int argc,char *argv[])
 	if ((pf = fopen(argv[3], "w")) == NULL)
 		err(1, "%s", argv[3]);
 
+	if (strcmp(argv[4], "true") == 0) {
+		useBz2 = true;
+	}
+
 	/* Write header (signature+newsize)*/
 	offtout(newsize, buf);
 	if (fwrite("ENDSLEY/BSDIFF43", 16, 1, pf) != 1 ||
@@ -414,16 +439,20 @@ int main(int argc,char *argv[])
 		err(1, "Failed to write header");
 
 
-	// if (NULL == (bz2 = BZ2_bzWriteOpen(&bz2err, pf, 9, 0, 0)))
-	// 	errx(1, "BZ2_bzWriteOpen, bz2err=%d", bz2err);
+	if (useBz2) {
+		if (NULL == (bz2 = BZ2_bzWriteOpen(&bz2err, pf, 9, 0, 0)))
+			errx(1, "BZ2_bzWriteOpen, bz2err=%d", bz2err);
+	}
 
-	stream.opaque = pf;
+	stream.opaque = useBz2 ? bz2 : pf;
 	if (bsdiff(old, oldsize, new, newsize, &stream))
 		err(1, "bsdiff");
 
-	// BZ2_bzWriteClose(&bz2err, bz2, 0, NULL, NULL);
-	// if (bz2err != BZ_OK)
-	// 	err(1, "BZ2_bzWriteClose, bz2err=%d", bz2err);
+	if (useBz2) {
+		BZ2_bzWriteClose(&bz2err, bz2, 0, NULL, NULL);
+		if (bz2err != BZ_OK)
+			err(1, "BZ2_bzWriteClose, bz2err=%d", bz2err);
+	}
 
 	if (fclose(pf))
 		err(1, "fclose");

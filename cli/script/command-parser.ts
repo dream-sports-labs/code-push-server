@@ -693,6 +693,13 @@ yargs
         description: "Percentage of users this release should be available to",
         type: "string",
       })
+      .option("compression", {  
+        alias: "c",
+        default: "brotli",
+        demand: false,
+        description: "Compression mode to be used to compress the folder. Can be either 'brotli' or 'deflate'. Default is 'brotli'. Brotli is recommended for better compression ratio and performance.",
+        type: "string",
+      })
       .check((argv: any, aliases: { [aliases: string]: string }): any => {
         return checkValidReleaseOptions(argv);
       });
@@ -918,8 +925,16 @@ yargs
     isValidCommand = true;
     yargs
       .usage(USAGE_PREFIX + " create-patch path/to/old.bundle path/to/new.bundle directory/to/save/bundle.patch")
-      .demand(/*count*/ 3, /*max*/ 3) // Require exactly three non-option arguments
-      .example("create-patch path/to/old.bundle path/to/new.bundle directory/to/save/bundle.patch", "Create a patch from old.bundle to new.bundle and save it as bundle.patch");
+      .demand(/*count*/ 3, /*max*/ 4) // Require exactly three non-option arguments
+      .example("create-patch path/to/old.bundle path/to/new.bundle directory/to/save/bundle.patch", "Create a patch from old.bundle to new.bundle and save it as bundle.patch")
+      .option("compression", {
+        alias: "c",
+        default: false,
+        demand: false,
+        description: "Compression mode for patch file. By default compression is disabled.",
+        type: "boolean",
+      });
+
     addCommonConfiguration(yargs);
   })
   .command("apply-patch", "Apply a binary patch to a bundle file", (yargs: yargs.Argv) => {
@@ -1282,6 +1297,7 @@ export function createCommand(): cli.ICommand {
           releaseCommand.mandatory = argv["mandatory"] as any;
           releaseCommand.noDuplicateReleaseError = argv["noDuplicateReleaseError"] as any;
           releaseCommand.rollout = getRolloutValue(argv["rollout"] as any);
+          releaseCommand.compression = argv["compression"] as any;
         }
         break;
 
@@ -1362,6 +1378,7 @@ export function createCommand(): cli.ICommand {
           createPatchCommand.oldBundle = arg1;
           createPatchCommand.newBundle = arg2;
           createPatchCommand.patchFile = arg3;
+          createPatchCommand.compression = argv["compression"] as any;
         }
         break;
 
@@ -1389,8 +1406,17 @@ function isValidRollout(args: any): boolean {
   return true;
 }
 
+function isValidCompression(args: any): boolean {
+  const compression: string = args["compression"];
+  if (compression !== 'brotli' && compression !== 'deflate') {
+    console.log('Invalid compression mode: ', compression + '. Provide a valid compression mode: brotli or deflate');
+    return false;
+  }
+  return true;
+}
+
 function checkValidReleaseOptions(args: any): boolean {
-  return isValidRollout(args) && !!args["deploymentName"];
+  return isValidRollout(args) && !!args["deploymentName"] && isValidCompression(args);
 }
 
 function getRolloutValue(input: string): number {

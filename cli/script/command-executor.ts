@@ -1245,7 +1245,6 @@ function patch(command: cli.IPatchCommand): Promise<void> {
 }
 
 export const release = (command: cli.IReleaseCommand): Promise<void> => {
-  console.log('reaching here at release');
   if (isBinaryOrZip(command.package)) {
     throw new Error(
       "It is unnecessary to package releases in a .zip or binary file. Please specify the direct path to the update content's directory (e.g. /platforms/ios/www) or file (e.g. main.jsbundle)."
@@ -1280,13 +1279,11 @@ export const release = (command: cli.IReleaseCommand): Promise<void> => {
     rollout: command.rollout,
   };
 
-  console.log('updateMetaData ::', updateMetadata);
 
   return sdk
     .isAuthenticated(true)
     .then((isAuth: boolean): Promise<void> => {
-      console.log('authenticated making release call');
-      return sdk.release(command.appName, command.deploymentName, filePath, command.appStoreVersion, updateMetadata, uploadProgress);
+      return sdk.release(command.appName, command.deploymentName, filePath, command.appStoreVersion, updateMetadata, uploadProgress, command.compression ?? 'brotli');
     })
     .then((): void => {
       log(
@@ -1654,10 +1651,12 @@ function getSdk(accessKey: string, headers: Headers, customServerUrl: string): A
 function createPatch(command: cli.ICreatePatchCommand): Promise<void> {
   return Q.Promise<void>((resolve, reject) => {
     const scriptPath = path.join(__dirname, "patch-scripts", "create-patch.sh");
-    const args = [command.oldBundle, command.newBundle, command.patchFile];
+    const args = [command.oldBundle, command.newBundle, command.patchFile, command.compression];
     
-    log(`Creating patch with fileName: bundle.patch from ${command.oldBundle} to ${command.newBundle}`);
-    log(`Patch will be saved to: ${command.patchFile}`);
+    log("==Input Arguments==");
+    log(`Old bundle: ${command.oldBundle}`);
+    log(`New bundle: ${command.newBundle}`);
+    log(`Patch file path: ${command.patchFile}`);
     
     const child = childProcess.spawn("bash", [scriptPath, ...args], {
       stdio: "inherit",
@@ -1666,7 +1665,7 @@ function createPatch(command: cli.ICreatePatchCommand): Promise<void> {
     
     child.on("close", (code: number) => {
       if (code === 0) {
-        log("Patch created successfully!");
+        log("Patch file created successfully!");
         resolve();
       } else {
         reject(new Error(`Patch creation failed with exit code ${code}`));

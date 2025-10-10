@@ -199,6 +199,7 @@ export interface IReleaseBaseCommand extends ICommand, IPackageInfo {
 
 export interface IReleaseCommand extends IReleaseBaseCommand {
   package: string;
+  compression?: string;
 }
 
 export interface IReleaseReactCommand extends IReleaseBaseCommand {
@@ -249,6 +250,7 @@ export interface ICreatePatchCommand extends ICommand {
   oldBundle: string;
   newBundle: string;
   patchFile: string;
+  compression?: boolean;
 }
 
 export interface IApplyPatchCommand extends ICommand {
