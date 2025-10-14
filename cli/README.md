@@ -25,14 +25,48 @@ After installing CodePush CLI globally, it will be available under `code-push-st
 
 ## Binary Patch Operations
 
-The CLI includes binary diff capability for creating efficient updates between application bundles:
+DOTA optimizes over-the-air updates by using binary diffing to create minimal patch files. Instead of sending complete bundles, it sends only the changes between versions, significantly reducing update sizes.
+
+### Creating Patches
+
+Create a binary patch between two bundle versions:
 
 ```shell
-# Create a binary patch between two bundles
-code-push-standalone create-patch .dota/android/base/index.android.bundle .dota/android/new/index.android.bundle bundle.patch
+code-push-standalone create-patch <old_bundle> <new_bundle> <patch_directory>
 ```
 
-For detailed information about the diff algorithm implementation and customization options, see the [bsdiff README](bsdiff/README.md).
+Parameters:
+- `old_bundle`: Path to the current version bundle
+- `new_bundle`: Path to the updated version bundle
+- `patch_directory`: Directory where the patch file will be saved (created if doesn't exist)
+
+Example:
+```shell
+code-push-standalone create-patch \
+  .old/index.android.bundle \
+  .new/index.android.bundle \
+  ./patches/v1-to-v2/
+```
+
+This will create `bundle.patch` in the specified directory.
+
+### Applying Patches
+
+Apply a patch to update an existing bundle:
+
+```shell
+code-push-standalone apply-patch <old_bundle> <patch_file> <output_file>
+```
+
+Example:
+```shell
+code-push-standalone apply-patch \
+  ./current/index.android.bundle \
+  ./patches/v1-to-v2/bundle.patch \
+  ./updated/index.android.bundle
+```
+
+For detailed information about the binary diff algorithm, see [bsdiff43 documentation](bsdiff/README.md).
 
 ## Account Management
 
