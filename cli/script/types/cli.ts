@@ -200,6 +200,7 @@ export interface IReleaseBaseCommand extends ICommand, IPackageInfo {
 export interface IReleaseCommand extends IReleaseBaseCommand {
   package: string;
   compression?: string;
+  isPatch?: boolean;
 }
 
 export interface IReleaseReactCommand extends IReleaseBaseCommand {

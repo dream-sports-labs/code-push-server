@@ -310,8 +310,11 @@ code-push-standalone release <appName> <updateContents> <targetBinaryVersion>
 [--mandatory]
 [--noDuplicateReleaseError]
 [--rollout <rolloutPercentage>]
+[--isPatch <true|false>]        # specify if update is a patch or full bundle. default is false
 [--compression <compression>] # 'brotli' (default, better compression) or 'deflate' (faster)
 ```
+
+> **Note about update type**: The `--isPatch` flag is to ensure you're explicitly specifying whether you're uploading a patch file or a full bundle. Use `--isPatch true` for patch updates (smaller size) or `--isPatch false` for full bundle updates.
 
 > **Note about compression**: Brotli typically achieves better compression ratios than deflate (e.g., 23.1MB → 8.14MB with Brotli vs 11.04MB with deflate for index.android.bundle). Use deflate only if you have specific compatibility requirements.
 

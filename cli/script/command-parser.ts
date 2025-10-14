@@ -693,6 +693,13 @@ yargs
         description: "Percentage of users this release should be available to",
         type: "string",
       })
+      .option("isPatch", {
+        alias: "p",
+        demand: false,
+        default: false,
+        description: "Specify whether the update is a patch or full bundle. Default is false.",
+        type: "boolean"
+      })
       .option("compression", {  
         alias: "c",
         default: "brotli",
@@ -1291,6 +1298,7 @@ export function createCommand(): cli.ICommand {
           releaseCommand.noDuplicateReleaseError = argv["noDuplicateReleaseError"] as any;
           releaseCommand.rollout = getRolloutValue(argv["rollout"] as any);
           releaseCommand.compression = argv["compression"] as any;
+          releaseCommand.isPatch = argv["isPatch"] as boolean;
         }
         break;
 
