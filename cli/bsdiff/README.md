@@ -21,11 +21,6 @@ Built using the bsdiff/bspatch library:
 
 ## Prerequisites
 
-### System Requirements
-- Unix-like environment (macOS, Linux) or Windows with WSL
-- GCC or compatible C compiler
-- At least 2x the size of your largest bundle file in available disk space
-
 ### Dependencies
 - bzip2 library (for compression support)
   - **macOS**: Pre-installed
