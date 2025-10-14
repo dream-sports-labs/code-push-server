@@ -250,12 +250,10 @@ export interface ICreatePatchCommand extends ICommand {
   oldBundle: string;
   newBundle: string;
   patchFile: string;
-  compression?: boolean;
 }
 
 export interface IApplyPatchCommand extends ICommand {
   oldBundle: string;
   patchFile: string;
   outputBundle: string;
-  isPatchCompressed?: boolean;
 }

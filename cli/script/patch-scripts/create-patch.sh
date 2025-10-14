@@ -20,17 +20,13 @@ if [[ -f "$3" ]]; then
     exit 1
 fi
 
-PATCH_DIR="$(cd "$3" 2>/dev/null && pwd || echo "$(pwd)/$3")"
+PATCH_DIR="$3"
 PATCH_FILE="$PATCH_DIR/bundle.patch"
 
-echo "==Resolved Absolute Paths=="
+echo "==Using Paths=="
 echo "Old bundle: $OLD_BUNDLE"
 echo "New bundle: $NEW_BUNDLE"
-echo "Patch directory: $PATCH_DIR"
 echo "Patch file: $PATCH_FILE"
-
-# Create patch directory if it doesn't exist
-mkdir -p "$PATCH_DIR"
 
 # Create the patch using bsdiff43
 echo "Creating patch using bsdiff43..."

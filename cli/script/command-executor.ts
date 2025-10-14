@@ -1651,12 +1651,29 @@ function getSdk(accessKey: string, headers: Headers, customServerUrl: string): A
 function createPatch(command: cli.ICreatePatchCommand): Promise<void> {
   return Q.Promise<void>((resolve, reject) => {
     const scriptPath = path.join(__dirname, "patch-scripts", "create-patch.sh");
-    const args = [command.oldBundle, command.newBundle, command.patchFile, command.compression];
+    
+    // Normalize the patch directory path
+    let patchDir = command.patchFile;
+    if (!path.isAbsolute(patchDir)) {
+      patchDir = path.resolve(process.cwd(), patchDir);
+    }
+    
+    // Create the directory if it doesn't exist
+    try {
+      fs.mkdirSync(patchDir, { recursive: true });
+    } catch (err) {
+      if (err.code !== 'EEXIST') {
+        reject(new Error(`Failed to create directory: ${err.message}`));
+        return;
+      }
+    }
+    
+    const args = [command.oldBundle, command.newBundle, patchDir, false];
     
     log("==Input Arguments==");
     log(`Old bundle: ${command.oldBundle}`);
     log(`New bundle: ${command.newBundle}`);
-    log(`Patch file path: ${command.patchFile}`);
+    log(`Patch directory: ${patchDir}`);
     
     const child = childProcess.spawn("bash", [scriptPath, ...args], {
       stdio: "inherit",
@@ -1681,7 +1698,7 @@ function createPatch(command: cli.ICreatePatchCommand): Promise<void> {
 function applyPatch(command: cli.IApplyPatchCommand): Promise<void> {
   return Q.Promise<void>((resolve, reject) => {
     const scriptPath = path.join(__dirname, "patch-scripts", "apply-patch.sh");
-    const args = [command.oldBundle, command.patchFile, command.outputBundle, command.isPatchCompressed];
+    const args = [command.oldBundle, command.patchFile, command.outputBundle, false];
     
     log(`Applying patch to ${command.oldBundle}`);
     log(`Output will be saved to: ${command.outputBundle}`);

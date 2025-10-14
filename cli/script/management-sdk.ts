@@ -539,9 +539,7 @@ class AccountManager {
                 });
 
                 // Add compressed content to zip
-                zipFile.addReadStream(brotliStream, `${relativePath}.br`, {
-                  compress: false  // Already compressed with Brotli
-                });
+                zipFile.addReadStream(brotliStream, `${relativePath}.br`);
 
                 // Write content to stream
                 brotliStream.end(fileContent);
