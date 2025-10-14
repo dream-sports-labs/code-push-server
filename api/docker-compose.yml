@@ -1,5 +1,6 @@
 version: '3.8'
 services:
+  # Shared services (always running)
   db:
     image: mysql:5.7
     platform: linux/amd64
@@ -18,12 +19,35 @@ services:
     ports:
       - "6379:6379"  # Redis running on localhost:6379
 
+  # AWS Stack (use with --profile aws)
   localstack:
     image: localstack/localstack
     environment:
       - SERVICES=s3
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
     ports:
-      - "4566:4566"  # LocalStack running on localhost:4566
+      - "4566:4566"  # LocalStack S3 on localhost:4566
+    volumes:
+      - localstack_data:/tmp/localstack
+    profiles: ["aws"]
+
+  # GCP Stack (use with --profile gcp)
+  fake-gcs:
+    image: fsouza/fake-gcs-server:latest
+    ports:
+      - "4443:4443"  # fake-gcs-server on localhost:4443
+    command: [
+      "-scheme", "http",
+      "-host", "0.0.0.0",
+      "-port", "4443",
+      "-public-host", "localhost:4443"
+    ]
+    volumes:
+      - gcs_data:/data
+    profiles: ["gcp"]
 
 volumes:
   db_data:
+  localstack_data:
+  gcs_data:
