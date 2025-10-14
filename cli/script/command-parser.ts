@@ -697,7 +697,7 @@ yargs
         alias: "c",
         default: "brotli",
         demand: false,
-        description: "Compression mode to be used to compress the folder. Can be either 'brotli' or 'deflate'. Default is 'brotli'. Brotli is recommended for better compression ratio and performance.",
+        description: "Compression algorithm: 'brotli' (default, recommended) or 'deflate'",
         type: "string",
       })
       .check((argv: any, aliases: { [aliases: string]: string }): any => {

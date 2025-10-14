@@ -310,8 +310,10 @@ code-push-standalone release <appName> <updateContents> <targetBinaryVersion>
 [--mandatory]
 [--noDuplicateReleaseError]
 [--rollout <rolloutPercentage>]
-[--compression <'brotli' | 'deflate'>]
+[--compression <compression>] # 'brotli' (default, better compression) or 'deflate' (faster)
 ```
+
+> **Note about compression**: Brotli typically achieves better compression ratios than deflate (e.g., 23.1MB → 8.14MB with Brotli vs 11.04MB with deflate for index.android.bundle). Use deflate only if you have specific compatibility requirements.
 
 #### App name parameter
 
