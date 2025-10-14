@@ -38,10 +38,15 @@ export const GCS_CONFIG = {
   // For local development with fake-gcs-server
   ...(process.env.NODE_ENV === 'development' && {
     apiEndpoint: process.env.STORAGE_EMULATOR_HOST || 'http://localhost:4443',
+    // Use fake credentials for fake-gcs-server
     credentials: {
       client_email: 'test@example.com',
-      private_key: '-----BEGIN PRIVATE KEY-----\nfake-key\n-----END PRIVATE KEY-----\n'
-    }
+      private_key: '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC5T7QZ9YjZZJ\nfake-key-content\n-----END PRIVATE KEY-----\n'
+    },
+    // Disable SSL verification for local development
+    ...(process.env.STORAGE_EMULATOR_HOST && {
+      ssl: false
+    })
   }),
   // For production, use service account key file or ADC
   ...(process.env.NODE_ENV !== 'development' && process.env.GOOGLE_APPLICATION_CREDENTIALS && {

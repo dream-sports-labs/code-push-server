@@ -6,6 +6,8 @@ import * as shortid from "shortid";
 import * as utils from "../utils/common";
 import * as mysql from "mysql2/promise";
 import { DB_HOST, DB_PASS, GCS_BUCKET_NAME, GCS_CONFIG, SEQUELIZE_CONFIG } from "./gcp-storage.constants";
+// For Node.js 18+ fetch is built-in, for older versions we might need node-fetch
+const fetch = globalThis.fetch;
 
 //Creating Access Key
 export function createAccessKey(sequelize: Sequelize) {
@@ -366,20 +368,56 @@ export class GCPStorage implements storage.Storage {
       this.gcsClient = new GCSStorage(GCS_CONFIG);
       
       try {
-        // Check if bucket exists, create if it doesn't
-        const bucket = this.gcsClient.bucket(GCS_BUCKET_NAME);
-        const [exists] = await bucket.exists();
-        
-        if (!exists) {
-          console.log(`[GCPStorage] setupGCS() Bucket ${GCS_BUCKET_NAME} does not exist, creating it...`);
-          await this.gcsClient.createBucket(GCS_BUCKET_NAME);
-          console.log(`[GCPStorage] setupGCS() Bucket ${GCS_BUCKET_NAME} created successfully`);
+        // For development with fake-gcs-server, we need to handle bucket operations differently
+        if (process.env.NODE_ENV === 'development' && process.env.STORAGE_EMULATOR_HOST) {
+          console.log(`[GCPStorage] setupGCS() Using fake-gcs-server, skipping bucket existence check`);
+          
+          // Try to create bucket using direct HTTP call to fake-gcs-server
+          try {
+            const response = await fetch(`${process.env.STORAGE_EMULATOR_HOST}/storage/v1/b`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                name: GCS_BUCKET_NAME,
+                project: process.env.GCP_PROJECT_ID || 'codepush-local-dev'
+              })
+            });
+            
+            if (response.ok) {
+              console.log(`[GCPStorage] setupGCS() Bucket ${GCS_BUCKET_NAME} created successfully via HTTP`);
+            } else if (response.status === 409) {
+              console.log(`[GCPStorage] setupGCS() Bucket ${GCS_BUCKET_NAME} already exists`);
+            } else {
+              console.log(`[GCPStorage] setupGCS() Bucket creation response: ${response.status} ${response.statusText}`);
+            }
+          } catch (fetchError) {
+            console.log(`[GCPStorage] setupGCS() Direct HTTP bucket creation failed, continuing anyway:`, fetchError.message);
+          }
+          
         } else {
-          console.log(`[GCPStorage] setupGCS() Bucket ${GCS_BUCKET_NAME} already exists`);
+          // Production: Use proper GCS API
+          const bucket = this.gcsClient.bucket(GCS_BUCKET_NAME);
+          const [exists] = await bucket.exists();
+          
+          if (!exists) {
+            console.log(`[GCPStorage] setupGCS() Bucket ${GCS_BUCKET_NAME} does not exist, creating it...`);
+            await this.gcsClient.createBucket(GCS_BUCKET_NAME);
+            console.log(`[GCPStorage] setupGCS() Bucket ${GCS_BUCKET_NAME} created successfully`);
+          } else {
+            console.log(`[GCPStorage] setupGCS() Bucket ${GCS_BUCKET_NAME} already exists`);
+          }
         }
       } catch (error) {
-        console.error('[GCPStorage] setupGCS() Error with bucket operations:', error);
-        throw error;
+        console.error('[GCPStorage] setupGCS() Error with bucket operations:', error.message);
+        
+        // For development, we can continue without bucket setup
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[GCPStorage] setupGCS() Continuing in development mode despite bucket error');
+        } else {
+          throw error;
+        }
       }
     }
 
@@ -395,6 +433,17 @@ export class GCPStorage implements storage.Storage {
       
       // await this.sequelize.sync();
       // console.log("[GCPStorage] Sequelize models synced");
+    }
+
+    public async cleanup(): Promise<void> {
+      if (this.sequelize) {
+        await this.sequelize.close();
+      }
+    }
+
+    public reinitialize(): Promise<void> {
+      console.log("Re-initializing GCP storage");
+      return this.setupGCS().then(() => this.setupSequelize());
     }
 
     public checkHealth(): Promise<void> {
@@ -577,6 +626,10 @@ export class GCPStorage implements storage.Storage {
 
     public dropAll(): Promise<void> {
       return Promise.resolve(<void>null);
+    }
+
+    public updateAppWithPermission(accountId: string, app: any, updateCollaborator: boolean = false): Promise<void> {
+      throw new Error("Method not implemented yet");
     }
 
     private static storageErrorHandler(gcpError: any): any {
