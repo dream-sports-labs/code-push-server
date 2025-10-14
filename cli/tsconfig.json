@@ -4,6 +4,7 @@
       "noImplicitAny": false,
       "target": "ES2022",
       "outDir": "./bin",
+      "rootDir": ".",
       "skipLibCheck": true,
     },
     "exclude": [
