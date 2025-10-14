@@ -920,23 +920,23 @@ yargs
 
     addCommonConfiguration(yargs);
   })
-  .command("create-patch", "Create a binary patch between two bundle files", (yargs: yargs.Argv) => {
+  .command("create-patch", "Create a patch file between two files", (yargs: yargs.Argv) => {
     isValidCommandCategory = true;
     isValidCommand = true;
     yargs
-      .usage(USAGE_PREFIX + " create-patch path/to/old.bundle path/to/new.bundle directory/to/save/bundle.patch")
+      .usage(USAGE_PREFIX + " create-patch path/to/oldfile path/to/newfile directory/to/save/bundle.patch")
       .demand(/*count*/ 3, /*max*/ 3) // Require exactly three non-option arguments
-      .example("create-patch path/to/old.bundle path/to/new.bundle directory/to/save/bundle.patch", "Create a patch from old.bundle to new.bundle and save it as bundle.patch");
+      .example("create-patch .old/index.android.bundle .new/index.android.bundle ./patch-dir", "Create a bundle.patch file using .old/index.android.bundle and .new/index.android.bundle and save it as ./patch-dir/bundle.patch");
 
     addCommonConfiguration(yargs);
   })
-  .command("apply-patch", "Apply a binary patch to a bundle file", (yargs: yargs.Argv) => {
+  .command("apply-patch", "Apply a patch to a file", (yargs: yargs.Argv) => {
     isValidCommandCategory = true;
     isValidCommand = true;
     yargs
-      .usage(USAGE_PREFIX + " apply-patch path/to/old.bundle path/to/bundle.patch path/to/new.bundle")
+      .usage(USAGE_PREFIX + " apply-patch path/to/oldfile path/to/bundle.patch path/to/newfile")
       .demand(/*count*/ 3, /*max*/ 3) // Require exactly three non-option arguments
-      .example("apply-patch path/to/old.bundle path/to/bundle.patch path/to/new.bundle", "Apply bundle.patch to old.bundle and save the result as new.bundle");
+      .example("apply-patch .old/index.android.bundle ./patch-dir/bundle.patch .new/index.android.bundle", "Apply bundle.patch to .old/index.android.bundle and save the result as .new/index.android.bundle");
     addCommonConfiguration(yargs);
   })
   .command("whoami", "Display the account info for the current login session", (yargs: yargs.Argv) => {
