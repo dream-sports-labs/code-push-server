@@ -1083,6 +1083,55 @@ export function getManagementRouter(config: ManagementConfig): Router {
       .catch((error: error.CodePushError) => errorUtils.restErrorHandler(res, error, next))
   });
 
+  // New endpoint: Get all releases for an app across all deployments
+  router.get("/apps/:appName/releases", (req: Request, res: Response, next: (err?: any) => void): any => {
+    const accountId: string = req.user.id;
+    const appName: string = req.params.appName;
+    const tenantId: string = Array.isArray(req.headers.tenant) ? req.headers.tenant[0] : req.headers.tenant;
+    let appId: string;
+    let deploymentsData: storageTypes.Deployment[];
+
+    nameResolver
+      .resolveApp(accountId, appName, tenantId)
+      .then((app: storageTypes.App) => {
+        appId = app.id;
+        throwIfInvalidPermissions(app, storageTypes.Permissions.Collaborator);
+        return storage.getDeployments(accountId, appId);
+      })
+      .then((deployments: storageTypes.Deployment[]) => {
+        deploymentsData = deployments;
+        // Get package history for all deployments
+        const historyPromises = deployments.map((deployment: storageTypes.Deployment) => 
+          storage.getPackageHistory(accountId, appId, deployment.id)
+            .then((packages: storageTypes.Package[]) => ({
+              deploymentName: deployment.name,
+              deploymentKey: deployment.key,
+              packages: packages
+            }))
+        );
+        return Promise.all(historyPromises);
+      })
+      .then((allDeploymentHistories: Array<{ deploymentName: string; deploymentKey: string; packages: storageTypes.Package[] }>) => {
+        // Flatten all packages and add deployment info
+        const allReleases = allDeploymentHistories.flatMap(({ deploymentName, deploymentKey, packages }) => 
+          packages.map((pkg: storageTypes.Package) => ({
+            ...pkg,
+            deploymentName: deploymentName,
+            deploymentKey: deploymentKey
+          }))
+        );
+
+        // Sort by upload time (most recent first)
+        allReleases.sort((a, b) => b.uploadTime - a.uploadTime);
+
+        res.send({ 
+          releases: allReleases,
+          totalCount: allReleases.length
+        });
+      })
+      .catch((error: error.CodePushError) => errorUtils.restErrorHandler(res, error, next))
+  });
+
   router.get("/apps/:appName/deployments/:deploymentName/metrics", (req: Request, res: Response, next: (err?: any) => void): any => {
     if (!redisManager.isEnabled) {
       res.send({ metrics: {} });
