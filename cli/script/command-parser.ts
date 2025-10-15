@@ -702,9 +702,9 @@ yargs
       })
       .option("compression", {  
         alias: "c",
-        default: "brotli",
+        default: "deflate",
         demand: false,
-        description: "Compression algorithm: 'brotli' (default, recommended) or 'deflate'",
+        description: "Compression algorithm: 'deflate' (default) or 'brotli (for better compression)'",
         type: "string",
       })
       .check((argv: any, aliases: { [aliases: string]: string }): any => {
