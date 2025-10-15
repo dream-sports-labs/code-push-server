@@ -514,18 +514,7 @@ class AccountManager {
           try {
             if (compression === 'brotli') {
 
-              const progressBar = new progress('Compressing: [:bar] :current/:total files processed', {
-                complete: '=',
-                incomplete: ' ',
-                width: 50,
-                total: files.length + 1
-              });
-              let lastTotalProgress = 0;
-              const uploadProgress = (currentProgress: number): void => {
-                progressBar.tick(currentProgress - lastTotalProgress);
-                lastTotalProgress = currentProgress;
-              };
-
+              console.log(`\nCompressing ${files.length} files...`);
               // For Brotli, compress each file individually
               for (let i = 0; i < files.length; ++i) {
                 const file: string = files[i];
@@ -540,11 +529,9 @@ class AccountManager {
                 });
 
                 // Add compressed content to zip
-                zipFile.addReadStream(brotliStream, `${relativePath}.br`);
-
+                zipFile.addReadStream(brotliStream, `${relativePath}.br`); 
                 // Write content to stream
                 brotliStream.end(fileContent);
-                uploadProgress(i + 1);
               }
             } else {
               for (let i = 0; i < files.length; ++i) {
