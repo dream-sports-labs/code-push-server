@@ -6,6 +6,11 @@ import * as crypto from "crypto";
 // Using memcached library for Node.js
 const Memcached = require('memcached');
 
+export interface CacheableResponse {
+  statusCode: number;
+  body: any;
+}
+
 /**
  * Minimal Memcached Manager for updateCheck API caching only
  * Replaces Redis for updateCheck API responses
@@ -58,7 +63,7 @@ export class MemcachedManager {
   /**
    * Get cached response for updateCheck API
    */
-  public async getCachedResponse(deploymentKey: string, urlKey: string): Promise<any | null> {
+  public async getCachedResponse(deploymentKey: string, urlKey: string): Promise<CacheableResponse | null> {
     await this.setupPromise;
     
     return new Promise((resolve) => {
@@ -83,7 +88,7 @@ export class MemcachedManager {
   /**
    * Set cached response for updateCheck API
    */
-  public async setCachedResponse(deploymentKey: string, urlKey: string, response: any, ttlSeconds?: number): Promise<void> {
+  public async setCachedResponse(deploymentKey: string, urlKey: string, response: CacheableResponse, ttlSeconds?: number): Promise<void> {
     await this.setupPromise;
     
     const ttl = ttlSeconds || parseInt(process.env.CACHE_TTL_SECONDS || '3600'); // 1 hour default

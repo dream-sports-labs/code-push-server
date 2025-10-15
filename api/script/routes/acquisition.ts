@@ -8,7 +8,7 @@ import * as utils from "../utils/common";
 import * as acquisitionUtils from "../utils/acquisition";
 import * as errorUtils from "../utils/rest-error-handling";
 import * as redis from "../redis-manager";
-import { MemcachedManager } from "../memcached-manager";
+import { MemcachedManager, CacheableResponse } from "../memcached-manager";
 import * as restHeaders from "../utils/rest-headers";
 import * as rolloutSelector from "../utils/rollout-selector";
 import * as storageTypes from "../storage/storage";
@@ -44,7 +44,7 @@ function createResponseUsingStorage(
   req: express.Request,
   res: express.Response,
   storage: storageTypes.Storage
-): Promise<redis.CacheableResponse> {
+): Promise<CacheableResponse> {
   const deploymentKey: string = String(req.query.deploymentKey || req.query.deployment_key);
   const appVersion: string = String(req.query.appVersion || req.query.app_version);
   const packageHash: string = String(req.query.packageHash || req.query.package_hash);
@@ -90,7 +90,7 @@ function createResponseUsingStorage(
         }
       }
 
-      const cacheableResponse: redis.CacheableResponse = {
+      const cacheableResponse: CacheableResponse = {
         statusCode: 200,
         body: updateObject,
       };
@@ -117,7 +117,7 @@ function createResponseUsingStorage(
       );
     }
 
-    return Promise.resolve(<redis.CacheableResponse>(null));
+    return Promise.resolve(<CacheableResponse>(null));
   }
 }
 
@@ -207,7 +207,7 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
 
       // Use Memcached if available, otherwise skip cache entirely
       const cachePromise = memcachedManager 
-        ? memcachedWithTimeout<redis.CacheableResponse>(memcachedManager.getCachedResponse(deploymentKey, url))
+        ? memcachedWithTimeout<CacheableResponse>(memcachedManager.getCachedResponse(deploymentKey, url))
         : Promise.resolve(null); // No cache if Memcached not available
 
       cachePromise
@@ -217,13 +217,13 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
           cacheError = error;
           return null; // triggers fallback to DB
         })
-        .then((cachedResponse: redis.CacheableResponse | null) => {
+        .then((cachedResponse: CacheableResponse | null) => {
           fromCache = !!cachedResponse;
 
           // If we got nothing from cache, we use the DB storage approach.
           return cachedResponse || createResponseUsingStorage(req, res, storage);
         })
-        .then((response: redis.CacheableResponse) => {
+        .then((response: CacheableResponse) => {
           if (!response) {
             // If we still have no response, something else has gone wrong.
             // Possibly return next() with an error or handle differently.
