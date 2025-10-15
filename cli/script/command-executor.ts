@@ -55,7 +55,7 @@ const emailValidator = require("email-validator");
 const packageJson = require("../../package.json");
 const parseXml = Q.denodeify(require("xml2js").parseString);
 import Promise = Q.Promise;
-import { Organisation } from "./types/rest-definitions";
+import { Organisation, ReleasePackageInfo } from "./types/rest-definitions";
 const properties = require("properties");
 
 const CLI_HEADERS: Headers = {
@@ -573,6 +573,12 @@ export function execute(command: cli.ICommand) {
 
       case cli.CommandType.whoami:
         return whoami(command);
+
+      case cli.CommandType.createPatch:
+        return createPatch(<cli.ICreatePatchCommand>command);
+
+      case cli.CommandType.applyPatch:
+        return applyPatch(<cli.IApplyPatchCommand>command);
 
       default:
         // We should never see this message as invalid commands should be caught by the argument parser.
@@ -1239,7 +1245,6 @@ function patch(command: cli.IPatchCommand): Promise<void> {
 }
 
 export const release = (command: cli.IReleaseCommand): Promise<void> => {
-  console.log('reaching here at release');
   if (isBinaryOrZip(command.package)) {
     throw new Error(
       "It is unnecessary to package releases in a .zip or binary file. Please specify the direct path to the update content's directory (e.g. /platforms/ios/www) or file (e.g. main.jsbundle)."
@@ -1267,20 +1272,19 @@ export const release = (command: cli.IReleaseCommand): Promise<void> => {
     lastTotalProgress = currentProgress;
   };
 
-  const updateMetadata: PackageInfo = {
+  const updateMetadata: ReleasePackageInfo = {
     description: command.description,
     isDisabled: command.disabled,
     isMandatory: command.mandatory,
     rollout: command.rollout,
+    isBundlePatchingEnabled: command.isPatch ?? false,
   };
 
-  console.log('updateMetaData ::', updateMetadata);
 
   return sdk
     .isAuthenticated(true)
     .then((isAuth: boolean): Promise<void> => {
-      console.log('authenticated making release call');
-      return sdk.release(command.appName, command.deploymentName, filePath, command.appStoreVersion, updateMetadata, uploadProgress);
+      return sdk.release(command.appName, command.deploymentName, filePath, command.appStoreVersion, updateMetadata, uploadProgress, command.compression ?? 'deflate');
     })
     .then((): void => {
       log(
@@ -1643,4 +1647,78 @@ function getSdk(accessKey: string, headers: Headers, customServerUrl: string): A
   });
 
   return sdk;
+}
+
+function createPatch(command: cli.ICreatePatchCommand): Promise<void> {
+  return Q.Promise<void>((resolve, reject) => {
+    const scriptPath = path.join(__dirname, "patch-scripts", "create-patch.sh");
+    
+    // Normalize the patch directory path
+    let patchDir = command.patchFile;
+    if (!path.isAbsolute(patchDir)) {
+      patchDir = path.resolve(process.cwd(), patchDir);
+    }
+    
+    // Create the directory if it doesn't exist
+    try {
+      fs.mkdirSync(patchDir, { recursive: true });
+    } catch (err) {
+      if (err.code !== 'EEXIST') {
+        reject(new Error(`Failed to create directory: ${err.message}`));
+        return;
+      }
+    }
+    
+    const args = [command.oldBundle, command.newBundle, patchDir, false];
+    
+    log("==Input Arguments==");
+    log(`Old bundle: ${command.oldBundle}`);
+    log(`New bundle: ${command.newBundle}`);
+    log(`Patch directory: ${patchDir}`);
+    
+    const child = childProcess.spawn("bash", [scriptPath, ...args], {
+      stdio: "inherit",
+      cwd: process.cwd()
+    });
+    
+    child.on("close", (code: number) => {
+      if (code === 0) {
+        log("Patch file created successfully!");
+        resolve();
+      } else {
+        reject(new Error(`Patch creation failed with exit code ${code}`));
+      }
+    });
+    
+    child.on("error", (error: Error) => {
+      reject(new Error(`Failed to start patch creation: ${error.message}`));
+    });
+  });
+}
+
+function applyPatch(command: cli.IApplyPatchCommand): Promise<void> {
+  return Q.Promise<void>((resolve, reject) => {
+    const scriptPath = path.join(__dirname, "patch-scripts", "apply-patch.sh");
+    const args = [command.oldBundle, command.patchFile, command.outputBundle, false];
+    
+    log(`Applying patch to ${command.oldBundle}`);
+    log(`Output will be saved to: ${command.outputBundle}`);
+    const child = childProcess.spawn("bash", [scriptPath, ...args], {
+      stdio: "inherit",
+      cwd: process.cwd()
+    });
+    
+    child.on("close", (code: number) => {
+      if (code === 0) {
+        log("Patch applied successfully!");
+        resolve();
+      } else {
+        reject(new Error(`Patch application failed with exit code ${code}`));
+      }
+    });
+    
+    child.on("error", (error: Error) => {
+      reject(new Error(`Failed to start patch application: ${error.message}`));
+    });
+  });
 }

@@ -23,6 +23,51 @@ To run the CodePush CLI, follow these steps:
 
 After installing CodePush CLI globally, it will be available under `code-push-standalone`.
 
+## Binary Patch Operations
+
+DOTA optimizes over-the-air updates by using binary diffing to create minimal patch files. Instead of sending complete bundles, it sends only the changes between versions, significantly reducing update sizes.
+
+### Creating Patches
+
+Create a binary patch between two bundle versions:
+
+```shell
+code-push-standalone create-patch <old_bundle> <new_bundle> <patch_directory>
+```
+
+Parameters:
+- `old_bundle`: Path to the current version bundle
+- `new_bundle`: Path to the updated version bundle
+- `patch_directory`: Directory where the patch file will be saved (created if doesn't exist)
+
+Example:
+```shell
+code-push-standalone create-patch \
+  .old/index.android.bundle \
+  .new/index.android.bundle \
+  ./patches/v1-to-v2/
+```
+
+This will create `bundle.patch` in the specified directory.
+
+### Applying Patches
+
+Apply a patch to update an existing bundle:
+
+```shell
+code-push-standalone apply-patch <old_bundle> <patch_file> <output_file>
+```
+
+Example:
+```shell
+code-push-standalone apply-patch \
+  ./current/index.android.bundle \
+  ./patches/v1-to-v2/bundle.patch \
+  ./updated/index.android.bundle
+```
+
+For detailed information about the binary diff algorithm, see [bsdiff43 documentation](bsdiff/README.md).
+
 ## Account Management
 
 Before you can begin releasing app updates, you need to create a CodePush account. You can do this by simply running the following command once you've installed the CLI:
@@ -265,7 +310,13 @@ code-push-standalone release <appName> <updateContents> <targetBinaryVersion>
 [--mandatory]
 [--noDuplicateReleaseError]
 [--rollout <rolloutPercentage>]
+[--isPatch <true|false>]        # specify if update is a patch or full bundle. default is false
+[--compression <'deflate' | 'brotli'>] # 'deflate' (default) or 'brotli' (better compression)
 ```
+
+> **Note about update type**: The `--isPatch` flag is to ensure you're explicitly specifying whether you're uploading a patch file or a full bundle. Use `--isPatch true` for patch updates (smaller size) or `--isPatch false` for full bundle updates.
+
+> **Note about compression**: Brotli typically achieves better compression ratios than deflate (e.g., 23.1MB → 8.14MB with Brotli vs 11.04MB with deflate for index.android.bundle). Use deflate only if you have specific compatibility requirements.
 
 #### App name parameter
 

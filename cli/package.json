@@ -5,7 +5,7 @@
   "main": "./script/cli.js",
   "scripts": {
     "start": "node ./bin/script/cli.js",
-    "build": "tsc",
+    "build": "tsc && cp -r ./script/patch-scripts ./bin/script",
     "prettier": "prettier --write \"./**/*.ts\"",
     "lint": "npx eslint ./script/**/*.ts",
     "lint:fix": "npx eslint ./script/**/*.ts --fix",

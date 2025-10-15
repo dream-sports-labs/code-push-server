@@ -693,6 +693,20 @@ yargs
         description: "Percentage of users this release should be available to",
         type: "string",
       })
+      .option("isPatch", {
+        alias: "p",
+        demand: false,
+        default: false,
+        description: "Specify whether the update is a patch or full bundle. Default is false.",
+        type: "boolean"
+      })
+      .option("compression", {  
+        alias: "c",
+        default: "deflate",
+        demand: false,
+        description: "Compression algorithm: 'deflate' (default) or 'brotli (for better compression)'",
+        type: "string",
+      })
       .check((argv: any, aliases: { [aliases: string]: string }): any => {
         return checkValidReleaseOptions(argv);
       });
@@ -911,6 +925,25 @@ yargs
       .command("ls", "List the current login sessions associated with your account", (yargs: yargs.Argv) => sessionList("ls", yargs))
       .check((argv: any, aliases: { [aliases: string]: string }): any => isValidCommand); // Report unrecognized, non-hyphenated command category.
 
+    addCommonConfiguration(yargs);
+  })
+  .command("create-patch", "Create a patch file between two files", (yargs: yargs.Argv) => {
+    isValidCommandCategory = true;
+    isValidCommand = true;
+    yargs
+      .usage(USAGE_PREFIX + " create-patch path/to/oldfile path/to/newfile directory/to/save/bundle.patch")
+      .demand(/*count*/ 3, /*max*/ 3) // Require exactly three non-option arguments
+      .example("create-patch .old/index.android.bundle .new/index.android.bundle ./patch-dir", "Create a bundle.patch file using .old/index.android.bundle and .new/index.android.bundle and save it as ./patch-dir/bundle.patch");
+
+    addCommonConfiguration(yargs);
+  })
+  .command("apply-patch", "Apply a patch to a file", (yargs: yargs.Argv) => {
+    isValidCommandCategory = true;
+    isValidCommand = true;
+    yargs
+      .usage(USAGE_PREFIX + " apply-patch path/to/oldfile path/to/bundle.patch path/to/newfile")
+      .demand(/*count*/ 3, /*max*/ 3) // Require exactly three non-option arguments
+      .example("apply-patch .old/index.android.bundle ./patch-dir/bundle.patch .new/index.android.bundle", "Apply bundle.patch to .old/index.android.bundle and save the result as .new/index.android.bundle");
     addCommonConfiguration(yargs);
   })
   .command("whoami", "Display the account info for the current login session", (yargs: yargs.Argv) => {
@@ -1264,6 +1297,8 @@ export function createCommand(): cli.ICommand {
           releaseCommand.mandatory = argv["mandatory"] as any;
           releaseCommand.noDuplicateReleaseError = argv["noDuplicateReleaseError"] as any;
           releaseCommand.rollout = getRolloutValue(argv["rollout"] as any);
+          releaseCommand.compression = argv["compression"] as any;
+          releaseCommand.isPatch = argv["isPatch"] as boolean;
         }
         break;
 
@@ -1336,6 +1371,26 @@ export function createCommand(): cli.ICommand {
       case "whoami":
         cmd = { type: cli.CommandType.whoami };
         break;
+
+      case "create-patch":
+        if (arg1 && arg2 && arg3) {
+          cmd = { type: cli.CommandType.createPatch };
+          const createPatchCommand = <cli.ICreatePatchCommand>cmd;
+          createPatchCommand.oldBundle = arg1;
+          createPatchCommand.newBundle = arg2;
+          createPatchCommand.patchFile = arg3;
+        }
+        break;
+
+      case "apply-patch":
+        if (arg1 && arg2 && arg3) {
+          cmd = { type: cli.CommandType.applyPatch };
+          const applyPatchCommand = <cli.IApplyPatchCommand>cmd;
+          applyPatchCommand.oldBundle = arg1;
+          applyPatchCommand.patchFile = arg2;
+          applyPatchCommand.outputBundle = arg3;
+        }
+        break;
     }
 
     return cmd;
@@ -1351,8 +1406,17 @@ function isValidRollout(args: any): boolean {
   return true;
 }
 
+function isValidCompression(args: any): boolean {
+  const compression: string = args["compression"];
+  if (compression !== 'brotli' && compression !== 'deflate') {
+    console.log('Invalid compression mode: ', compression + '. Provide a valid compression mode: brotli or deflate');
+    return false;
+  }
+  return true;
+}
+
 function checkValidReleaseOptions(args: any): boolean {
-  return isValidRollout(args) && !!args["deploymentName"];
+  return isValidRollout(args) && !!args["deploymentName"] && isValidCompression(args);
 }
 
 function getRolloutValue(input: string): number {
