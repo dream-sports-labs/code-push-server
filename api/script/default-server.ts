@@ -23,6 +23,7 @@ const domain = require("express-domain-middleware");
 import * as express from "express";
 const csrf = require('lusca').csrf;
 import { S3Storage } from "./storage/aws-storage";
+import { GCPStorage } from "./storage/gcp-storage";
 
 interface Secret {
   id: string;
@@ -49,12 +50,31 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
 
   Promise.resolve(<void>(null))
     .then(async () => {
-      if (!useJsonStorage) {
-        //storage = new JsonStorage();
-        storage = new S3Storage();
-      } else {
-        storage = new JsonStorage();
+      console.log(`[Storage] STORAGE_TYPE: ${process.env.STORAGE_TYPE}`);
+      // Option A: Backward compatibility - deprecate useJsonStorage gradually
+      // If useJsonStorage is true, use JSON storage, otherwise check STORAGE_TYPE env var
+      const storageType = useJsonStorage ? 'json' : (process.env.STORAGE_TYPE || 'aws');
+      
+      console.log(`[Storage] Initializing storage provider: ${storageType}`);
+      
+      switch (storageType.toLowerCase()) {
+        case 'aws':
+        case 's3':
+          storage = new S3Storage();
+          break;
+        case 'gcp':
+        case 'gcs':
+          storage = new GCPStorage();
+          break;
+        case 'json':
+        case 'file':
+          storage = new JsonStorage();
+          break;
+        default:
+          throw new Error(`Unsupported storage type: ${storageType}. Supported types: aws, gcp, json`);
       }
+      
+      console.log(`[Storage] Successfully initialized ${storageType} storage provider`);
     })
     .then(() => {
       const app = express();

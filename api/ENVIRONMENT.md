@@ -8,6 +8,14 @@ For convenience, we will also load the server environment from any '.env' file i
 
 ### Storage
 
+#### Storage Provider Selection
+
+- `STORAGE_TYPE`: Specifies which storage provider to use. Supported values:
+  - `aws` or `s3`: Use Amazon S3 for blob storage with MySQL database
+  - `gcp` or `gcs`: Use Google Cloud Storage for blob storage with MySQL database  
+  - `json` or `file`: Use local file-based storage (development only)
+  - Defaults to `aws` if not specified
+
 #### Local
 
 To emulate Azure Blob Storage locally. Azurite needs to be installed and running, more info [here](README.md#local).
