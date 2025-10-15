@@ -31,7 +31,7 @@ import {
   ServerAccessKey,
   Session,
 } from "./types";
-import { Organisation } from "./types/rest-definitions";
+import { Organisation, ReleasePackageInfo } from "./types/rest-definitions";
 
 const packageJson = require("../../package.json");
 
@@ -382,7 +382,7 @@ class AccountManager {
     deploymentName: string,
     filePath: string,
     targetBinaryVersion: string,
-    updateMetadata: PackageInfo,
+    updateMetadata: ReleasePackageInfo,
     uploadProgressCallback?: (progress: number) => void,
     compression: string = 'brotli'
   ): Promise<void> {
@@ -406,6 +406,7 @@ class AccountManager {
 
       getPackageFilePromise.then((packageFile: PackageFile) => {
         const file: any = fs.createReadStream(packageFile.path);
+        console.log('\nUploading Zip File of size ::', fs.statSync(packageFile.path).size);
         request
           .attach("package", file)
           .field("packageInfo", JSON.stringify(updateMetadata))

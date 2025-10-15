@@ -54,6 +54,10 @@ export interface PackageInfo {
   rollout?: number;
 }
 
+export interface ReleasePackageInfo extends PackageInfo {
+  isBundlePatchingEnabled?: boolean;
+}
+
 /*out*/
 export interface UpdateCheckResponse extends PackageInfo {
   target_binary_range?: string;

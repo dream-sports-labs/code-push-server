@@ -55,7 +55,7 @@ const emailValidator = require("email-validator");
 const packageJson = require("../../package.json");
 const parseXml = Q.denodeify(require("xml2js").parseString);
 import Promise = Q.Promise;
-import { Organisation } from "./types/rest-definitions";
+import { Organisation, ReleasePackageInfo } from "./types/rest-definitions";
 const properties = require("properties");
 
 const CLI_HEADERS: Headers = {
@@ -1272,11 +1272,12 @@ export const release = (command: cli.IReleaseCommand): Promise<void> => {
     lastTotalProgress = currentProgress;
   };
 
-  const updateMetadata: PackageInfo = {
+  const updateMetadata: ReleasePackageInfo = {
     description: command.description,
     isDisabled: command.disabled,
     isMandatory: command.mandatory,
     rollout: command.rollout,
+    isBundlePatchingEnabled: command.isPatch ?? false,
   };
 
 
