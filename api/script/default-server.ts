@@ -9,6 +9,7 @@ import { AzureStorage } from "./storage/azure-storage";
 import { fileUploadMiddleware } from "./file-upload-manager";
 import { JsonStorage } from "./storage/json-storage";
 import { RedisManager } from "./redis-manager";
+import { MemcachedManager } from "./memcached-manager";
 import { Storage } from "./storage/storage";
 import { Response } from "express";
 import rateLimit from "express-rate-limit";
@@ -61,6 +62,7 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
       const app = express();
       const auth = api.auth({ storage: storage });
       const redisManager = new RedisManager();
+      const memcachedManager = new MemcachedManager();
 
       // First, to wrap all requests and catch all exceptions.
       app.use(domain);
@@ -135,7 +137,7 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
       app.set("view engine", "ejs");
       app.use("/auth/images/", express.static(__dirname + "/views/images"));
       app.use(api.headers({ origin: process.env.CORS_ORIGIN || "http://localhost:4000" }));
-      app.use(api.health({ storage: storage, redisManager: redisManager }));
+      app.use(api.health({ storage: storage, redisManager: redisManager, memcachedManager: memcachedManager }));
 
       const limiter = rateLimit({
         windowMs: 1000, // 1 minute
@@ -144,7 +146,7 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
       });
 
       if (process.env.DISABLE_ACQUISITION !== "true") {
-        app.use(api.acquisition({ storage: storage, redisManager: redisManager }));
+        app.use(api.acquisition({ storage: storage, redisManager: redisManager, memcachedManager: memcachedManager }));
       }
 
       if (process.env.DISABLE_MANAGEMENT !== "true") {
