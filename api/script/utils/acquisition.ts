@@ -40,7 +40,6 @@ function getUpdatePackage(packageHistory: Package[], request: UpdateCheckRequest
     label: "",
     packageSize: 0,
     updateAppVersion: false,
-    isBundlePatchEnabled: false,
   };
 
   if (!packageHistory || packageHistory.length === 0) {
@@ -117,11 +116,9 @@ function getUpdatePackage(packageHistory: Package[], request: UpdateCheckRequest
   ) {
     updateDetails.downloadURL = latestSatisfyingEnabledPackage.diffPackageMap[request.packageHash].url;
     updateDetails.packageSize = latestSatisfyingEnabledPackage.diffPackageMap[request.packageHash].size;
-    updateDetails.isBundlePatchEnabled = latestSatisfyingEnabledPackage.isBundlePatchEnabled;
   } else {
     updateDetails.downloadURL = latestSatisfyingEnabledPackage.blobUrl;
     updateDetails.packageSize = latestSatisfyingEnabledPackage.size;
-    updateDetails.isBundlePatchEnabled = latestSatisfyingEnabledPackage.isBundlePatchEnabled;
   }
 
   updateDetails.description = latestSatisfyingEnabledPackage.description;

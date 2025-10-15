@@ -54,7 +54,6 @@ export interface PackageInfo {
   /*generated*/ label?: string;
   /*generated*/ packageHash?: string;
   rollout?: number;
-  isBundlePatchEnabled?: boolean;
 }
 
 /*out*/
@@ -65,7 +64,6 @@ export interface UpdateCheckResponse extends PackageInfo {
   packageSize?: number;
   shouldRunBinaryVersion?: boolean;
   updateAppVersion?: boolean;
-  isBundlePatchEnabled?: boolean;
 }
 
 /*out*/
