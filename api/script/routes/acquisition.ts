@@ -133,15 +133,7 @@ export function getHealthRouter(config: AcquisitionConfig): express.Router {
         storage.checkHealth()
       ];
 
-      // Redis health check with timeout
-      healthChecks.push(
-        Promise.race([
-          redisManager.checkHealth(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Redis timeout after 30ms")), 30)
-          )
-        ])
-      );
+      // Skip Redis health check - it's just a cache layer, not critical
 
       // Memcached health check with timeout (if memcachedManager exists)
       if (memcachedManager) {
