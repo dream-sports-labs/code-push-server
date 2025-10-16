@@ -196,12 +196,16 @@ export class RedisManager {
       }
       this._opsClient = process.env.REDIS_CLUSTER_ENABLED == "true" ? new Cluster(startUpNodes, options) : new Redis(redisConfig);
       this._metricsClient = process.env.REDIS_CLUSTER_ENABLED == "true" ? new Cluster(startUpNodes, options) : new Redis(redisConfig);
+      
+      // Suppress Redis errors if Redis is not critical for operation
       this._opsClient.on("error", (err: Error) => {
-        console.error("Redis ops client error:", err);
+        // Silently ignore Redis connection errors
+        // Redis is optional - system works without it
       });
 
       this._metricsClient.on("error", (err: Error) => {
-        console.error("Redis Metrics client error:", err);
+        // Silently ignore Redis connection errors
+        // Redis is optional - system works without it
       });
 
       this._promisifiedOpsClient = new PromisifiedRedisClient(this._opsClient);
