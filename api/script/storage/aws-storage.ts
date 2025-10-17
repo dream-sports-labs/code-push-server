@@ -188,6 +188,7 @@ export function createPackage(sequelize: Sequelize) {
       rollout: { type: DataTypes.FLOAT, allowNull: true },
       size: { type: DataTypes.FLOAT, allowNull: false },
       uploadTime: { type: DataTypes.BIGINT, allowNull: false },
+      isBundlePatchingEnabled: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       deploymentId: { // Foreign key to associate this package with a deployment history
         type: DataTypes.STRING,
         allowNull: true,
@@ -1742,6 +1743,7 @@ export class S3Storage implements storage.Storage {
         rollout: pkgData.rollout,
         size: pkgData.size,
         uploadTime: pkgData.uploadTime,
+        isBundlePatchingEnabled: pkgData.isBundlePatchingEnabled,
       };
     }
     

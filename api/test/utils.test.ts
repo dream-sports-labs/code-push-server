@@ -106,6 +106,7 @@ export function makePackage(version?: string, isMandatory?: boolean, packageHash
     size: 1,
     manifestBlobUrl: "test manifest blob URL",
     uploadTime: new Date().getTime(),
+    isBundlePatchingEnabled: false,
   };
 
   return storagePackage;
