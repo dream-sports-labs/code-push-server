@@ -75,8 +75,8 @@ export class Authentication {
   private isEmailDomainAuthorized(email: string): boolean {
     const authorizedDomains = process.env.LOGIN_AUTHORIZED_DOMAINS;
     
-    // Always include dream11.com as an allowed domain
-    let allowedDomains: string[] = ['dream11.com'];
+    // Initialize empty allowed domains array
+    let allowedDomains: string[] = [];
     
     if (authorizedDomains && authorizedDomains.trim() !== '') {
       // Parse comma-separated domains and normalize
