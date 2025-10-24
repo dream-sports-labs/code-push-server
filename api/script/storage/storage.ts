@@ -121,6 +121,7 @@ export interface Package {
   rollout?: number;
   size: number;
   uploadTime: number;
+  isBundlePatchingEnabled: boolean;
   active?: number;
   downloaded?: number;
   failed?: number;

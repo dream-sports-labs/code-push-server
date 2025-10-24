@@ -9,6 +9,7 @@ import { AzureStorage } from "./storage/azure-storage";
 import { fileUploadMiddleware } from "./file-upload-manager";
 import { JsonStorage } from "./storage/json-storage";
 import { RedisManager } from "./redis-manager";
+import { MemcachedManager } from "./memcached-manager";
 import { Storage } from "./storage/storage";
 import { Response } from "express";
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || "<your-s3-bucket-name>";
@@ -65,6 +66,7 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
       console.log(`Trust proxy hops: ${trustProxyHops}`);
       const auth = api.auth({ storage: storage });
       const redisManager = new RedisManager();
+      const memcachedManager = new MemcachedManager();
 
       // First, to wrap all requests and catch all exceptions.
       app.use(domain);
@@ -139,12 +141,12 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
       app.set("view engine", "ejs");
       app.use("/auth/images/", express.static(__dirname + "/views/images"));
       app.use(api.headers({ origin: process.env.CORS_ORIGIN || "http://localhost:4000" }));
-      app.use(api.health({ storage: storage, redisManager: redisManager }));
+      app.use(api.health({ storage: storage, redisManager: redisManager, memcachedManager: memcachedManager }));
 
       // Rate limiting removed: relying on CloudFront + WAF for request throttling
 
       if (process.env.DISABLE_ACQUISITION !== "true") {
-        app.use(api.acquisition({ storage: storage, redisManager: redisManager }));
+        app.use(api.acquisition({ storage: storage, redisManager: redisManager, memcachedManager: memcachedManager }));
       }
 
       if (process.env.DISABLE_MANAGEMENT !== "true") {
@@ -173,4 +175,8 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
 
       done(null, app, storage);
     })
+    .catch((error) => {
+      console.error("Error starting server:", error);
+      done(error);
+    });
 }

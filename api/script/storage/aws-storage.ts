@@ -1,14 +1,12 @@
-import * as storage from "./storage";
-import { S3, CloudFront} from "aws-sdk";
-import {HeadBucketRequest, CreateBucketRequest} from "aws-sdk/clients/s3"
-import { getSignedUrl } from "aws-cloudfront-sign";
+import { S3 } from "aws-sdk";
+import { CreateBucketRequest, HeadBucketRequest } from "aws-sdk/clients/s3";
+import { DataTypes, Sequelize } from "sequelize";
 import * as stream from "stream";
-import { Sequelize, DataTypes } from "sequelize";
+import * as storage from "./storage";
 //import * from nanoid;
+import * as mysql from "mysql2/promise";
 import * as shortid from "shortid";
 import * as utils from "../utils/common";
-import * as mysql from "mysql2/promise";
-import * as fs from "fs";
 import * as security from "../utils/security";
 
 //Creating Access Key
@@ -188,6 +186,7 @@ export function createPackage(sequelize: Sequelize) {
       rollout: { type: DataTypes.FLOAT, allowNull: true },
       size: { type: DataTypes.FLOAT, allowNull: false },
       uploadTime: { type: DataTypes.BIGINT, allowNull: false },
+      isBundlePatchingEnabled: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       deploymentId: { // Foreign key to associate this package with a deployment history
         type: DataTypes.STRING,
         allowNull: true,
@@ -317,7 +316,7 @@ export const MODELS = {
 }
 
 const DB_NAME = "codepushdb"
-const DB_USER = "codepush"
+const DB_USER = "root"
 const DB_PASS = "root"
 const DB_HOST = "localhost"
 
@@ -327,15 +326,31 @@ export class S3Storage implements storage.Storage {
     private sequelize:Sequelize;
     private setupPromise: Promise<void>;
     public constructor() {
-        this.s3 = new S3({
-          region: process.env.S3_REGION
-        });
+        const s3Config = {
+          region: process.env.S3_REGION, 
+        }
+
+        if (process.env.NODE_ENV === "local" || process.env.NODE_ENV === "dev") {
+          // These additional configurations are passed due to AWS SDK Version issue on local
+          this.s3 = new S3({
+            ...s3Config,
+            endpoint: process.env.S3_ENDPOINT, // LocalStack S3 endpoint
+            s3ForcePathStyle: true,
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+          });
+        } else {
+          this.s3 = new S3(s3Config);
+        }
         shortid.characters("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-");
 
         // Ensure the database exists, then initialize Sequelize
         this.setupPromise = this.createDatabaseIfNotExists().then(() => {
           this.sequelize = new Sequelize({
             database: process.env.DB_NAME || DB_NAME,
+            username: process.env.DB_USER || DB_USER,
+            password: process.env.DB_PASS || DB_PASS,
+            host: process.env.DB_HOST || DB_HOST,
             dialect: 'mysql',
             replication: {
                 write: {
@@ -1742,6 +1757,7 @@ export class S3Storage implements storage.Storage {
         rollout: pkgData.rollout,
         size: pkgData.size,
         uploadTime: pkgData.uploadTime,
+        isBundlePatchingEnabled: pkgData.isBundlePatchingEnabled,
       };
     }
     
