@@ -73,13 +73,6 @@ export interface Organization {
   role: string;
 }
 
-export interface TermsAcceptance {
-  /*generated*/ id?: string;
-  accountId: string;
-  email: string;
-  termsVersion: string;
-  acceptedTime: number; // Epoch timestamp
-}
 
 export interface Deployment {
   /*generated*/ createdTime?: number;
@@ -161,9 +154,6 @@ export interface Storage {
   updateAccount(email: string, updates: Account): Promise<void>;
   getAppOwnershipCount(accountId: string): Promise<number>;
 
-  // Terms acceptance methods
-  getTermsAcceptance(accountId: string): Promise<TermsAcceptance>;
-  addOrUpdateTermsAcceptance(termsAcceptance: TermsAcceptance): Promise<TermsAcceptance>;
 
   getTenants(accountId: string): Promise<Organization[]>;
   removeTenant(accountId: string, tenantId: string): Promise<void>;

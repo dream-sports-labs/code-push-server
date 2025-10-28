@@ -115,24 +115,6 @@ export function createCollaborators(sequelize: Sequelize) {
     })
 }
 
-//Create TermsAcceptance
-export function createTermsAcceptance(sequelize: Sequelize) {
-    return sequelize.define("termsAcceptance", {
-        id: { type: DataTypes.STRING, allowNull: false, primaryKey: true },
-        accountId: { 
-            type: DataTypes.STRING, 
-            allowNull: false, 
-            unique: true, // Prevents duplicate entries per account
-            references: {
-                model: 'accounts',
-                key: 'id',
-            }
-        },
-        email: { type: DataTypes.STRING, allowNull: false },
-        termsVersion: { type: DataTypes.STRING, allowNull: false },
-        acceptedTime: { type: DataTypes.BIGINT, allowNull: false }, // Epoch timestamp
-    })
-}
 
 //Create Deployment
 
@@ -246,7 +228,6 @@ export function createModelss(sequelize: Sequelize) {
   const AppPointer = createAppPointer(sequelize);
   const Collaborator = createCollaborators(sequelize);
   const App = createApp(sequelize);
-  const TermsAcceptance = createTermsAcceptance(sequelize);
 
   // Define associations
 
@@ -287,7 +268,6 @@ export function createModelss(sequelize: Sequelize) {
     AppPointer,
     Collaborator,
     App,
-    TermsAcceptance,
   };
 }
 
@@ -312,7 +292,6 @@ export const MODELS = {
   ACCOUNT : "account",
   APPPOINTER: "AppPointer",
   TENANT : "tenant",
-  TERMS_ACCEPTANCE : "termsAcceptance"
 }
 
 const DB_NAME = "codepushdb"
@@ -525,66 +504,6 @@ export class S3Storage implements storage.Storage {
             .catch(S3Storage.storageErrorHandler);
     }
 
-    // Terms acceptance methods
-    public getTermsAcceptance(accountId: string): Promise<storage.TermsAcceptance> {
-        return this.setupPromise
-            .then(() => {
-                return this.sequelize.models[MODELS.TERMS_ACCEPTANCE].findOne({
-                    where: { accountId: accountId }
-                });
-            })
-            .then((result: any) => {
-                if (!result) {
-                    throw storage.storageError(
-                        storage.ErrorCode.NotFound,
-                        `Terms acceptance record not found for account ${accountId}`
-                    );
-                }
-                return {
-                    id: result.id,
-                    accountId: result.accountId,
-                    email: result.email,
-                    termsVersion: result.termsVersion,
-                    acceptedTime: result.acceptedTime
-                };
-            })
-            .catch(S3Storage.storageErrorHandler);
-    }
-
-    public addOrUpdateTermsAcceptance(termsAcceptance: storage.TermsAcceptance): Promise<storage.TermsAcceptance> {
-        return this.setupPromise
-            .then(() => {
-                const termsData = {
-                    id: termsAcceptance.id || security.generateSecureKey(termsAcceptance.accountId),
-                    accountId: termsAcceptance.accountId,
-                    email: termsAcceptance.email,
-                    termsVersion: termsAcceptance.termsVersion,
-                    acceptedTime: termsAcceptance.acceptedTime
-                    // createdAt and updatedAt handled by Sequelize defaults
-                };
-
-                // Use upsert (INSERT ... ON DUPLICATE KEY UPDATE)
-                return this.sequelize.models[MODELS.TERMS_ACCEPTANCE].upsert(termsData, {
-                    returning: true
-                });
-            })
-            .then(() => {
-                // After upsert, fetch the record to return it
-                return this.sequelize.models[MODELS.TERMS_ACCEPTANCE].findOne({
-                    where: { accountId: termsAcceptance.accountId }
-                });
-            })
-            .then((result: any) => {
-                return {
-                    id: result.id,
-                    accountId: result.accountId,
-                    email: result.email,
-                    termsVersion: result.termsVersion,
-                    acceptedTime: result.acceptedTime
-                };
-            })
-            .catch(S3Storage.storageErrorHandler);
-    }
   
     public getAccountIdFromAccessKey(accessKey: string): Promise<string> {
   

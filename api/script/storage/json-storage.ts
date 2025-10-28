@@ -44,7 +44,6 @@ export class JsonStorage implements storage.Storage {
   public packages: { [id: string]: storage.Package } = {};
   public blobs: { [id: string]: string } = {};
   public accessKeys: { [id: string]: storage.AccessKey } = {};
-  public termsAcceptance: { [accountId: string]: storage.TermsAcceptance } = {};
 
   public accountToAppsMap: { [id: string]: string[] } = {};
   public appToAccountMap: { [id: string]: string } = {};
@@ -242,39 +241,6 @@ export class JsonStorage implements storage.Storage {
     });
   }
 
-  // Terms acceptance methods
-  public getTermsAcceptance(accountId: string): Promise<storage.TermsAcceptance> {
-    const termsRecord = this.termsAcceptance[accountId];
-    if (!termsRecord) {
-      return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
-    }
-    return Promise.resolve(clone(termsRecord));
-  }
-
-  public addOrUpdateTermsAcceptance(termsAcceptance: storage.TermsAcceptance): Promise<storage.TermsAcceptance> {
-    const existingRecord = this.termsAcceptance[termsAcceptance.accountId];
-    
-    if (existingRecord) {
-      // Update existing record
-      existingRecord.termsVersion = termsAcceptance.termsVersion;
-      existingRecord.acceptedTime = termsAcceptance.acceptedTime;
-      this.saveStateAsync();
-      return Promise.resolve(clone(existingRecord));
-    } else {
-      // Create new record
-      const newRecord: storage.TermsAcceptance = {
-        id: termsAcceptance.id || this.newId(),
-        accountId: termsAcceptance.accountId,
-        email: termsAcceptance.email,
-        termsVersion: termsAcceptance.termsVersion,
-        acceptedTime: termsAcceptance.acceptedTime
-      };
-
-      this.termsAcceptance[termsAcceptance.accountId] = newRecord;
-      this.saveStateAsync();
-      return Promise.resolve(clone(newRecord));
-    }
-  }
 
   public getAccountIdFromAccessKey(accessKey: string): Promise<string> {
     if (!this.accessKeyNameToAccountIdMap[accessKey]) {
