@@ -1,7 +1,7 @@
 {
-  "name": "code-push-server",
+  "name": "dota-server",
   "version": "0.0.1",
-  "description": "Source code for the CodePush service API",
+  "description": "Source code for the Delivr OTA service API",
   "main": "./script/server.js",
   "scripts": {
     "start": "node ./bin/script/server.js",
@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/microsoft/code-push-server"
+    "url": "https://github.com/ds-horizon/delivr-server-ota"
   },
   "engines": {
     "node": ">=18.0.0",
