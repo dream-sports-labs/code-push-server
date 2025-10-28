@@ -490,8 +490,10 @@ export class S3Storage implements storage.Storage {
         return this.setupPromise
             .then(async () => {
               const account = await this.sequelize.models[MODELS.ACCOUNT].findOne({where: {email : email}})
-              //Fix this error code
-              return account !== null ? Promise.resolve(account.dataValues) : Promise.reject({code: 1})
+              if (account === null) {
+                throw storage.storageError(storage.ErrorCode.NotFound, `Account with email ${email} not found`);
+              }
+              return account.dataValues;
             })
     }
   
@@ -650,7 +652,8 @@ export class S3Storage implements storage.Storage {
             });
 
             if(tenant) {
-              throw new Error("An organization or user of this name already exists. Please select a different name.")
+              throw storage.storageError(storage.ErrorCode.AlreadyExists, "An organization or user of this name already exists. Please select a different name.");
+              //throw new Error("An organization or user of this name already exists. Please select a different name.")
             } else {
             // If no tenantId is provided, set tenantId to NULL (app is standalone/personal)
               const idTogenerate = shortid.generate();

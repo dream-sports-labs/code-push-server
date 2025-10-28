@@ -665,14 +665,11 @@ export function getManagementRouter(config: ManagementConfig): Router {
     nameResolver
       .resolveApp(accountId, appName, tenantId)
       .then((app: storageTypes.App) => {
-        const isAdmin: boolean =
-          app.collaborators && email && app.collaborators[email] && app.collaborators[email].isCurrentAccount;
-        let permission = role === "Owner" ? storageTypes.Permissions.Owner : storageTypes.Permissions.Collaborator;
-          throwIfInvalidPermissions(app, permission);
+          throwIfInvalidPermissions(app, storageTypes.Permissions.Owner);
         return storage.updateCollaborators(accountId, app.id, email, role);
       })
       .then(() => {
-        res.sendStatus(204);
+        res.sendStatus(200);
       })
       .catch((error: error.CodePushError) => errorUtils.restErrorHandler(res, error, next))
   });
