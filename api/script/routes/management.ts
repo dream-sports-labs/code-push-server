@@ -567,6 +567,17 @@ export function getManagementRouter(config: ManagementConfig): Router {
       .resolveApp(accountId, appName, tenantId)
       .then((app: storageTypes.App) => {
           throwIfInvalidPermissions(app, storageTypes.Permissions.Owner);
+        
+        // Prevent ONLY the app creator from changing their permission from Owner to Collaborator
+        const collaboratorBeingModified = app.collaborators[email];
+        if (collaboratorBeingModified) {
+          const collaboratorAccountId = collaboratorBeingModified.accountId;
+          const appCreatorAccountId = (app as any).accountId;
+          if (collaboratorAccountId === appCreatorAccountId && role === "Collaborator") {
+            throw errorUtils.restError(errorUtils.ErrorCode.Conflict,"The app creator cannot change their permission from Owner to Collaborator.");
+          }
+        }
+        
         return storage.updateCollaborators(accountId, app.id, email, role);
       })
       .then(() => {
