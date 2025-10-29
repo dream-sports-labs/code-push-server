@@ -10,7 +10,7 @@
         "log_date_format": "DD-MM-YYYY HH:mm Z",
         "cwd": "/var/www/dota-server/api",
         "env": {
-          "NODE_ENV": "load"
+          "NODE_ENV": "uat"
         }
       }
     ]

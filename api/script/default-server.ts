@@ -9,9 +9,9 @@ import { AzureStorage } from "./storage/azure-storage";
 import { fileUploadMiddleware } from "./file-upload-manager";
 import { JsonStorage } from "./storage/json-storage";
 import { RedisManager } from "./redis-manager";
+import { MemcachedManager } from "./memcached-manager";
 import { Storage } from "./storage/storage";
 import { Response } from "express";
-import rateLimit from "express-rate-limit";
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || "<your-s3-bucket-name>";
 const RDS_DB_INSTANCE_IDENTIFIER = process.env.RDS_DB_INSTANCE_IDENTIFIER || "<your-rds-instance>";
 const SECRETS_MANAGER_SECRET_ID = process.env.SECRETS_MANAGER_SECRET_ID || "<your-secret-id>";
@@ -59,8 +59,14 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
     })
     .then(() => {
       const app = express();
+      // Trust a specific number of proxy hops (safer than boolean true).
+      // Configure via TRUST_PROXY_HOPS; default to 1 when sitting behind a single proxy/ELB.
+      const trustProxyHops = parseInt(process.env.TRUST_PROXY_HOPS || "1", 10);
+      app.set("trust proxy", trustProxyHops);
+      console.log(`Trust proxy hops: ${trustProxyHops}`);
       const auth = api.auth({ storage: storage });
       const redisManager = new RedisManager();
+      const memcachedManager = new MemcachedManager();
 
       // First, to wrap all requests and catch all exceptions.
       app.use(domain);
@@ -135,16 +141,12 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
       app.set("view engine", "ejs");
       app.use("/auth/images/", express.static(__dirname + "/views/images"));
       app.use(api.headers({ origin: process.env.CORS_ORIGIN || "http://localhost:4000" }));
-      app.use(api.health({ storage: storage, redisManager: redisManager }));
+      app.use(api.health({ storage: storage, redisManager: redisManager, memcachedManager: memcachedManager }));
 
-      const limiter = rateLimit({
-        windowMs: 1000, // 1 minute
-        max: 2000, // limit each IP to 100 requests per windowMs
-        validate: { xForwardedForHeader: false }
-      });
+      // Rate limiting removed: relying on CloudFront + WAF for request throttling
 
       if (process.env.DISABLE_ACQUISITION !== "true") {
-        app.use(api.acquisition({ storage: storage, redisManager: redisManager }));
+        app.use(api.acquisition({ storage: storage, redisManager: redisManager, memcachedManager: memcachedManager }));
       }
 
       if (process.env.DISABLE_MANAGEMENT !== "true") {
@@ -166,11 +168,15 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
         } else {
           app.use(auth.router());
         }
-        app.use(auth.authenticate, fileUploadMiddleware, limiter, api.management({ storage: storage, redisManager: redisManager }));
+        app.use(auth.authenticate, fileUploadMiddleware, api.management({ storage: storage, redisManager: redisManager }));
       } else {
         app.use(auth.router());
       }
 
       done(null, app, storage);
     })
+    .catch((error) => {
+      console.error("Error starting server:", error);
+      done(error);
+    });
 }

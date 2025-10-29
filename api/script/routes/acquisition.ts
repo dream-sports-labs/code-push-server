@@ -8,6 +8,7 @@ import * as utils from "../utils/common";
 import * as acquisitionUtils from "../utils/acquisition";
 import * as errorUtils from "../utils/rest-error-handling";
 import * as redis from "../redis-manager";
+import { MemcachedManager, CacheableResponse } from "../memcached-manager";
 import * as restHeaders from "../utils/rest-headers";
 import * as rolloutSelector from "../utils/rollout-selector";
 import * as storageTypes from "../storage/storage";
@@ -23,19 +24,27 @@ const METRICS_BREAKING_VERSION = "1.5.2-beta";
 export interface AcquisitionConfig {
   storage: storageTypes.Storage;
   redisManager: redis.RedisManager;
+  memcachedManager?: MemcachedManager;
 }
 
 function getUrlKey(originalUrl: string): string {
   const obj: any = URL.parse(originalUrl, /*parseQueryString*/ true);
   delete obj.query.client_unique_id;
-  return obj.pathname + "?" + queryString.stringify(obj.query);
+  
+  // Sort query parameters to ensure consistent hashing
+  const sortedQuery: any = {};
+  Object.keys(obj.query).sort().forEach(key => {
+    sortedQuery[key] = obj.query[key];
+  });
+  
+  return obj.pathname + "?" + queryString.stringify(sortedQuery);
 }
 
 function createResponseUsingStorage(
   req: express.Request,
   res: express.Response,
   storage: storageTypes.Storage
-): Promise<redis.CacheableResponse> {
+): Promise<CacheableResponse> {
   const deploymentKey: string = String(req.query.deploymentKey || req.query.deployment_key);
   const appVersion: string = String(req.query.appVersion || req.query.app_version);
   const packageHash: string = String(req.query.packageHash || req.query.package_hash);
@@ -81,7 +90,7 @@ function createResponseUsingStorage(
         }
       }
 
-      const cacheableResponse: redis.CacheableResponse = {
+      const cacheableResponse: CacheableResponse = {
         statusCode: 200,
         body: updateObject,
       };
@@ -108,25 +117,44 @@ function createResponseUsingStorage(
       );
     }
 
-    return Promise.resolve(<redis.CacheableResponse>(null));
+    return Promise.resolve(<CacheableResponse>(null));
   }
 }
 
 export function getHealthRouter(config: AcquisitionConfig): express.Router {
   const storage: storageTypes.Storage = config.storage;
   const redisManager: redis.RedisManager = config.redisManager;
+  const memcachedManager: MemcachedManager = config.memcachedManager;
   const router: express.Router = express.Router();
 
   router.get("/healthcheck", (req: express.Request, res: express.Response, next: (err?: any) => void): any => {
-      Promise.any([
+      // Either Storage OR Redis must be healthy (at least one)
+      const storageOrRedis = Promise.any([
         storage.checkHealth(),
         Promise.race([
           redisManager.checkHealth(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout after 30ms")), 30)
+            setTimeout(() => reject(new Error("Redis timeout after 30ms")), 30)
           )
         ])
-      ])
+      ]);
+
+      const healthChecks: Promise<any>[] = [storageOrRedis];
+
+      // Memcached health check with timeout (REQUIRED if memcachedManager exists)
+      if (memcachedManager) {
+        healthChecks.push(
+          Promise.race([
+            memcachedManager.checkHealth(),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Memcached timeout after 30ms")), 30)
+            )
+          ])
+        );
+      }
+
+      // Storage/Redis (at least one) AND Memcached (if configured) must be healthy
+      Promise.all(healthChecks)
         .then(() => res.status(200).send("Healthy"))
         .catch((error: Error) => {
           errorUtils.sendUnknownError(res, error, next);
@@ -141,9 +169,12 @@ export function getHealthRouter(config: AcquisitionConfig): express.Router {
 export function getAcquisitionRouter(config: AcquisitionConfig): express.Router {
   const storage: storageTypes.Storage = config.storage;
   const redisManager: redis.RedisManager = config.redisManager;
+  const memcachedManager: MemcachedManager = config.memcachedManager;
   const router: express.Router = express.Router();
   const REDIS_TIMEOUT = 100;
-  const REDIS_TIMEOUT_MS = parseInt(process.env.REDIS_TIMEOUT) || REDIS_TIMEOUT; 
+  const REDIS_TIMEOUT_MS = parseInt(process.env.REDIS_TIMEOUT) || REDIS_TIMEOUT;
+  const MEMCACHED_TIMEOUT_MS = parseInt(process.env.MEMCACHED_TIMEOUT) || 100;
+  const CACHE_TTL_SECONDS = parseInt(process.env.CACHE_TTL_SECONDS) || 60; // 1 minute default 
 
   function redisWithTimeout<T>(redisPromise: Promise<T>): Promise<T> {
     return Promise.race([
@@ -154,30 +185,43 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
     ]);
   }
 
+  function memcachedWithTimeout<T>(memcachedPromise: Promise<T>): Promise<T> {
+    return Promise.race([
+      memcachedPromise,
+      new Promise<T>((_resolve, reject) => {
+        setTimeout(() => reject(new Error("Memcached request timed out. Memcached might be down")), MEMCACHED_TIMEOUT_MS);
+      }),
+    ]);
+  }
+
   const updateCheck = function (newApi: boolean) {
     return function (req: express.Request, res: express.Response, next: (err?: any) => void) {
       const deploymentKey: string = String(req.query.deploymentKey || req.query.deployment_key);
-      const key: string = redis.Utilities.getDeploymentKeyHash(deploymentKey);
       const clientUniqueId: string = String(req.query.clientUniqueId || req.query.client_unique_id);
       const url: string = getUrlKey(req.originalUrl);
 
       let fromCache = true;
-      let redisError: Error | null = null;
+      let cacheError: Error | null = null;
 
-      redisWithTimeout<redis.CacheableResponse>(redisManager.getCachedResponse(key, url))
+      // Use Memcached if available, otherwise skip cache entirely
+      const cachePromise = memcachedManager 
+        ? memcachedWithTimeout<CacheableResponse>(memcachedManager.getCachedResponse(deploymentKey, url))
+        : Promise.resolve(null); // No cache if Memcached not available
+
+      cachePromise
         .catch((error: Error) => {
-          // If Redis is down/slow, we store the error for logging but return null
+          // If cache is down/slow, we store the error for logging but return null
           // so we can continue with DB lookups.
-          redisError = error;
+          cacheError = error;
           return null; // triggers fallback to DB
         })
-        .then((cachedResponse: redis.CacheableResponse | null) => {
+        .then((cachedResponse: CacheableResponse | null) => {
           fromCache = !!cachedResponse;
 
-          // If we got nothing from Redis, we use the DB storage approach.
+          // If we got nothing from cache, we use the DB storage approach.
           return cachedResponse || createResponseUsingStorage(req, res, storage);
         })
-        .then((response: redis.CacheableResponse) => {
+        .then((response: CacheableResponse) => {
           if (!response) {
             // If we still have no response, something else has gone wrong.
             // Possibly return next() with an error or handle differently.
@@ -215,20 +259,21 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
             .status(response.statusCode)
             .send(newApi ? utils.convertObjectToSnakeCase(updateCheckBody) : updateCheckBody);
 
-          // Update Redis cache AFTER sending response, if we didn't have a cache hit
-          if (!fromCache) {
-            redisManager.setCachedResponse(key, url, response).catch((err) => {
-              // Log the error, but don’t block the request (which is already done).
-              console.error("Failed while setting cached response in Redis:", err);
+          // Update cache AFTER sending response, if we didn't have a cache hit
+          if (!fromCache && memcachedManager) {
+            // Only cache in Memcached for updateCheck API
+            memcachedManager.setCachedResponse(deploymentKey, url, response, CACHE_TTL_SECONDS).catch((err) => {
+              // Log the error, but don't block the request (which is already done).
+              console.error("Failed while setting cached response in Memcached:", err);
               sendErrorToDatadog(err);
             });
           }
         })
         .then(() => {
-          // If there was a Redis error, log it (e.g., to Datadog) and optionally throw
-          if (redisError) {
-            sendErrorToDatadog(redisError);
-            console.error("Redis error:", redisError);
+          // If there was a cache error, log it (e.g., to Datadog) and optionally throw
+          if (cacheError) {
+            sendErrorToDatadog(cacheError);
+            console.error("Memcached cache error:", cacheError);
           }
         })
         .catch((error: storageTypes.StorageError) => {

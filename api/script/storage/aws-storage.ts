@@ -1,14 +1,13 @@
-import * as storage from "./storage";
-import { S3, CloudFront} from "aws-sdk";
-import {HeadBucketRequest, CreateBucketRequest} from "aws-sdk/clients/s3"
-import { getSignedUrl } from "aws-cloudfront-sign";
+import { S3 } from "aws-sdk";
+import { CreateBucketRequest, HeadBucketRequest } from "aws-sdk/clients/s3";
+import { DataTypes, Sequelize } from "sequelize";
 import * as stream from "stream";
-import { Sequelize, DataTypes } from "sequelize";
+import * as storage from "./storage";
 //import * from nanoid;
+import * as mysql from "mysql2/promise";
 import * as shortid from "shortid";
 import * as utils from "../utils/common";
-import * as mysql from "mysql2/promise";
-import * as fs from "fs";
+import * as security from "../utils/security";
 
 //Creating Access Key
 export function createAccessKey(sequelize: Sequelize) {
@@ -116,6 +115,7 @@ export function createCollaborators(sequelize: Sequelize) {
     })
 }
 
+
 //Create Deployment
 
 export function createDeployment(sequelize: Sequelize) {
@@ -168,6 +168,7 @@ export function createPackage(sequelize: Sequelize) {
       rollout: { type: DataTypes.FLOAT, allowNull: true },
       size: { type: DataTypes.FLOAT, allowNull: false },
       uploadTime: { type: DataTypes.BIGINT, allowNull: false },
+      isBundlePatchingEnabled: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       deploymentId: { // Foreign key to associate this package with a deployment history
         type: DataTypes.STRING,
         allowNull: true,
@@ -290,11 +291,11 @@ export const MODELS = {
   ACCESSKEY : "accessKey",
   ACCOUNT : "account",
   APPPOINTER: "AppPointer",
-  TENANT : "tenant"
+  TENANT : "tenant",
 }
 
 const DB_NAME = "codepushdb"
-const DB_USER = "codepush"
+const DB_USER = "root"
 const DB_PASS = "root"
 const DB_HOST = "localhost"
 
@@ -304,19 +305,31 @@ export class S3Storage implements storage.Storage {
     private sequelize:Sequelize;
     private setupPromise: Promise<void>;
     public constructor() {
-        this.s3 = new S3({
-          endpoint: process.env.S3_ENDPOINT, // LocalStack S3 endpoint
-          s3ForcePathStyle: true,
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-          region: process.env.S3_REGION
-        });
+        const s3Config = {
+          region: process.env.S3_REGION, 
+        }
+
+        if (process.env.NODE_ENV === "local" || process.env.NODE_ENV === "dev") {
+          // These additional configurations are passed due to AWS SDK Version issue on local
+          this.s3 = new S3({
+            ...s3Config,
+            endpoint: process.env.S3_ENDPOINT, // LocalStack S3 endpoint
+            s3ForcePathStyle: true,
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+          });
+        } else {
+          this.s3 = new S3(s3Config);
+        }
         shortid.characters("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-");
 
         // Ensure the database exists, then initialize Sequelize
         this.setupPromise = this.createDatabaseIfNotExists().then(() => {
           this.sequelize = new Sequelize({
             database: process.env.DB_NAME || DB_NAME,
+            username: process.env.DB_USER || DB_USER,
+            password: process.env.DB_PASS || DB_PASS,
+            host: process.env.DB_HOST || DB_HOST,
             dialect: 'mysql',
             replication: {
                 write: {
@@ -456,8 +469,10 @@ export class S3Storage implements storage.Storage {
         return this.setupPromise
             .then(async () => {
               const account = await this.sequelize.models[MODELS.ACCOUNT].findOne({where: {email : email}})
-              //Fix this error code
-              return account !== null ? Promise.resolve(account.dataValues) : Promise.reject({code: 1})
+              if (account === null) {
+                throw storage.storageError(storage.ErrorCode.NotFound, `Account with email ${email} not found`);
+              }
+              return account.dataValues;
             })
     }
   
@@ -474,6 +489,21 @@ export class S3Storage implements storage.Storage {
         })
         .catch(S3Storage.storageErrorHandler);
     }
+
+    public getAppOwnershipCount(accountId: string): Promise<number> {
+        return this.setupPromise
+            .then(() => {
+                // Direct query to collaborators table
+                return this.sequelize.models[MODELS.COLLABORATOR].count({
+                    where: {
+                        accountId: accountId,
+                        permission: 'Owner'
+                    }
+                });
+            })
+            .catch(S3Storage.storageErrorHandler);
+    }
+
   
     public getAccountIdFromAccessKey(accessKey: string): Promise<string> {
   
@@ -541,7 +571,8 @@ export class S3Storage implements storage.Storage {
             });
 
             if(tenant) {
-              throw new Error("An organization or user of this name already exists. Please select a different name.")
+              throw storage.storageError(storage.ErrorCode.AlreadyExists, "An organization or user of this name already exists. Please select a different name.");
+              //throw new Error("An organization or user of this name already exists. Please select a different name.")
             } else {
             // If no tenantId is provided, set tenantId to NULL (app is standalone/personal)
               const idTogenerate = shortid.generate();
@@ -1209,9 +1240,13 @@ export class S3Storage implements storage.Storage {
         return this.setupPromise
         .then(async () => {
           for (const appPackage of history) {
-            // Find the existing package in the table
+            // Find the existing package in the table using unique label and packageHash for data integrity
             const existingPackage = await this.sequelize.models[MODELS.PACKAGE].findOne({
-              where: { deploymentId: deploymentId, packageHash: appPackage.packageHash },
+              where: { 
+                deploymentId: deploymentId, 
+                label: appPackage.label,
+                packageHash: appPackage.packageHash
+              },
             });
     
             if (existingPackage) {
@@ -1644,6 +1679,7 @@ export class S3Storage implements storage.Storage {
         rollout: pkgData.rollout,
         size: pkgData.size,
         uploadTime: pkgData.uploadTime,
+        isBundlePatchingEnabled: pkgData.isBundlePatchingEnabled,
       };
     }
     

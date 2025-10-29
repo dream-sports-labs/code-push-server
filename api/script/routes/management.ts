@@ -176,6 +176,8 @@ export function getManagementRouter(config: ManagementConfig): Router {
       .catch((error: error.CodePushError) => errorUtils.restErrorHandler(res, error, next))
   });
 
+
+
   router.patch("/accessKeys/:accessKeyName", (req: Request, res: Response, next: (err?: any) => void): any => {
     const accountId: string = req.user.id;
     const accessKeyName: string = req.params.accessKeyName;
@@ -564,14 +566,22 @@ export function getManagementRouter(config: ManagementConfig): Router {
     nameResolver
       .resolveApp(accountId, appName, tenantId)
       .then((app: storageTypes.App) => {
-        const isAdmin: boolean =
-          app.collaborators && email && app.collaborators[email] && app.collaborators[email].isCurrentAccount;
-        let permission = role === "Owner" ? storageTypes.Permissions.Owner : storageTypes.Permissions.Collaborator;
-          throwIfInvalidPermissions(app, permission);
+          throwIfInvalidPermissions(app, storageTypes.Permissions.Owner);
+        
+        // Prevent ONLY the app creator from changing their permission from Owner to Collaborator
+        const collaboratorBeingModified = app.collaborators[email];
+        if (collaboratorBeingModified) {
+          const collaboratorAccountId = collaboratorBeingModified.accountId;
+          const appCreatorAccountId = (app as any).accountId;
+          if (collaboratorAccountId === appCreatorAccountId && role === "Collaborator") {
+            throw errorUtils.restError(errorUtils.ErrorCode.Conflict,"The app creator cannot change their permission from Owner to Collaborator.");
+          }
+        }
+        
         return storage.updateCollaborators(accountId, app.id, email, role);
       })
       .then(() => {
-        res.sendStatus(204);
+        res.sendStatus(200);
       })
       .catch((error: error.CodePushError) => errorUtils.restErrorHandler(res, error, next))
   });
@@ -1191,6 +1201,7 @@ export function getManagementRouter(config: ManagementConfig): Router {
             rollout: info.rollout || null,
             size: sourcePackage.size,
             uploadTime: new Date().getTime(),
+            isBundlePatchingEnabled: sourcePackage.isBundlePatchingEnabled,
             releaseMethod: storageTypes.ReleaseMethod.Promote,
             originalLabel: sourcePackage.label,
             originalDeployment: sourceDeploymentName,
@@ -1292,6 +1303,7 @@ export function getManagementRouter(config: ManagementConfig): Router {
             packageHash: destinationPackage.packageHash,
             size: destinationPackage.size,
             uploadTime: new Date().getTime(),
+            isBundlePatchingEnabled: destinationPackage.isBundlePatchingEnabled,
             releaseMethod: storageTypes.ReleaseMethod.Rollback,
             originalLabel: destinationPackage.label,
           };

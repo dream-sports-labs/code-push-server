@@ -73,6 +73,7 @@ export interface Organization {
   role: string;
 }
 
+
 export interface Deployment {
   /*generated*/ createdTime?: number;
   /*generated*/ id?: string;
@@ -113,6 +114,7 @@ export interface Package {
   rollout?: number;
   size: number;
   uploadTime: number;
+  isBundlePatchingEnabled: boolean;
   active?: number;
   downloaded?: number;
   failed?: number;
@@ -150,6 +152,8 @@ export interface Storage {
   getAccountByEmail(email: string): Promise<Account>;
   getAccountIdFromAccessKey(accessKey: string): Promise<string>;
   updateAccount(email: string, updates: Account): Promise<void>;
+  getAppOwnershipCount(accountId: string): Promise<number>;
+
 
   getTenants(accountId: string): Promise<Organization[]>;
   removeTenant(accountId: string, tenantId: string): Promise<void>;

@@ -3,7 +3,7 @@ import { createModelss } from "./aws-storage";
 
 // Define the Sequelize connection
 const sequelize = new Sequelize("codepushdb", "root", "root", {
-  host: "localhost",
+  host: process.env.DB_HOST || "db",
   dialect: "mysql",
 });
 
@@ -167,5 +167,8 @@ async function seed() {
   }
 }
 
-// Run the seed function
-seed();
+if (process.env.NODE_ENV !== "production") {
+  seed();
+} else {
+  // Do nothing
+}

@@ -215,6 +215,33 @@ export class JsonStorage implements storage.Storage {
     });
   }
 
+  public getAppOwnershipCount(accountId: string): Promise<number> {
+    return this.getAccount(accountId).then((account: storage.Account) => {
+      const appIds = this.accountToAppsMap[accountId];
+      
+      if (!appIds) {
+        return 0;
+      }
+
+      let ownerCount = 0;
+      const userEmail = account.email.toLowerCase();
+      
+      // Count apps where user is owner
+      appIds.forEach((appId: string) => {
+        const app = this.apps[appId];
+        if (app && app.collaborators && app.collaborators[userEmail]) {
+          const permission = app.collaborators[userEmail].permission;
+          if (permission === storage.Permissions.Owner) {
+            ownerCount++;
+          }
+        }
+      });
+
+      return ownerCount;
+    });
+  }
+
+
   public getAccountIdFromAccessKey(accessKey: string): Promise<string> {
     if (!this.accessKeyNameToAccountIdMap[accessKey]) {
       return JsonStorage.getRejectedPromise(storage.ErrorCode.NotFound);
