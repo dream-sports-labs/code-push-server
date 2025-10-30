@@ -1,33 +1,44 @@
-import ddTrace from 'dd-trace'
-ddTrace.init();
-export default ddTrace
+import { context, trace, SpanStatusCode, Attributes } from '@opentelemetry/api';
 
-export const getTraceId = () => {
-  const span = ddTrace.scope().active()
-  return span ? span.context().toTraceId() : undefined
-}
+export const getTraceId = (): string | undefined => {
+  const span = trace.getSpan(context.active());
+  return span ? span.spanContext().traceId : undefined;
+};
 
-export const getSpanId = () => {
-  const span = ddTrace.scope().active()
-  return span ? span.context().toSpanId() : undefined
-}
+export const getSpanId = (): string | undefined => {
+  const span = trace.getSpan(context.active());
+  return span ? span.spanContext().spanId : undefined;
+};
 
-export const addDataDogTagsToSpan = (kv: {[key: string]: any}) => {
-  const span = ddTrace.scope().active()
-  if (span) {
-    span.addTags(kv)
-  }
-}
+export const addOtelAttributesToSpan = (kv: { [key: string]: any }): void => {
+  const span = trace.getSpan(context.active());
+  if (!span) return;
 
-export const sendErrorToDatadog = (err: Error) => {
-    try {
-      addDataDogTagsToSpan({
-        'error.msg': err.message,
-        'error.type': err.name,
-        'error.stack': err.stack
-      });
-    } catch (loggingError) {
-      console.log('Failed to send error to Datadog:', loggingError);
+  const attrs: Attributes = {};
+  for (const [k, v] of Object.entries(kv)) {
+    if (v == null) continue;
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+      attrs[k] = v;
+    } else {
+      attrs[k] = JSON.stringify(v);
     }
-  };
+  }
+  span.setAttributes(attrs);
+};
+
+export const sendErrorToSignoz = (err: Error): void => {
+  try{
+    const span = trace.getSpan(context.active());
+    if (!span) return;
   
+    span.recordException(err);
+    span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
+    span.setAttributes({
+      'error.msg': err.message,
+      'error.type': err.name,
+      'error.stack': err.stack || '',
+    });
+  } catch (loggingError) {
+    console.log('Error sending error to Signoz:', loggingError);
+  }
+};

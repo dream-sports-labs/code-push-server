@@ -8,7 +8,7 @@ import { Cluster, ClusterOptions, Redis, ClusterNode } from "ioredis"
 
 import { ClusterConfig } from "aws-sdk/clients/opensearch";
 import { type } from "os";
-import { sendErrorToDatadog } from "./utils/tracer";
+import { sendErrorToSignoz } from "./utils/tracer";
 
 export const DEPLOYMENT_SUCCEEDED = "DeploymentSucceeded";
 export const DEPLOYMENT_FAILED = "DeploymentFailed";
@@ -235,7 +235,7 @@ export class RedisManager {
       })
       .catch((err) => {
         console.error("Redis health check failed:", err);
-        sendErrorToDatadog(err);
+        sendErrorToSignoz(err);
         throw err;
       });
   }
