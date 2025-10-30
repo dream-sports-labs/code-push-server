@@ -2,7 +2,7 @@ import { OAuth2Client, TokenPayload } from "google-auth-library";
 import * as cookieSession from "cookie-session";
 import { Request, Response, Router, RequestHandler } from "express";
 import * as storage from "../storage/storage";
-import { sendErrorToDatadog } from "../utils/tracer";
+import { sendErrorToSignoz } from "../utils/tracer";
 
 // Replace with your actual Google Client ID (from Google Developer Console)
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "<Your Google Client ID>";
@@ -44,7 +44,7 @@ export class Authentication {
       const payload = ticket.getPayload();
       return payload; // Return the user info from Google token
     } catch (error) {
-      sendErrorToDatadog(new Error("401: Unauthorised Invalid Google Token"));
+      sendErrorToSignoz(new Error("401: Unauthorised Invalid Google Token"));
       throw new Error("Invalid Google token");
     }
   }
@@ -66,7 +66,7 @@ export class Authentication {
     try {
       return await this._storageInstance.getAccount(userId);
     } catch (e) {
-      sendErrorToDatadog(new Error("403: User Not found"));
+      sendErrorToSignoz(new Error("403: User Not found"));
       throw new Error("No User found");
     }
   }
@@ -166,7 +166,7 @@ export class Authentication {
 
         // Authorize email domain BEFORE creating user in database
         if (!this.isEmailDomainAuthorized(userEmail)) {
-          sendErrorToDatadog(new Error(`403: Unauthorized domain access attempt - ${userEmail}`));
+          sendErrorToSignoz(new Error(`403: Unauthorized domain access attempt - ${userEmail}`));
           return res.status(403).send(
             "Access denied: Your email domain is not authorized to access this service. " +
             "Please contact your administrator if you believe this is an error."

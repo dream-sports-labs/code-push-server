@@ -3,14 +3,15 @@
 
 import * as express from "express";
 import * as defaultServer from "./default-server";
-import { sendErrorToDatadog } from "./utils/tracer";
+import { sendErrorToSignoz } from "./utils/tracer";
+import './instrumentation'
 
 const https = require("https");
 const fs = require("fs");
 
 defaultServer.start(function (err: Error, app: express.Express) {
   if (err) {
-    sendErrorToDatadog(err);
+    sendErrorToSignoz(err);
     throw err;
   }
 

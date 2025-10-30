@@ -17,7 +17,7 @@ import * as validationUtils from "../utils/validation";
 
 import * as queryString from "querystring";
 import * as URL from "url";
-import { sendErrorToDatadog } from "../utils/tracer";
+import { sendErrorToSignoz } from "../utils/tracer";
 
 const METRICS_BREAKING_VERSION = "1.5.2-beta";
 
@@ -158,7 +158,7 @@ export function getHealthRouter(config: AcquisitionConfig): express.Router {
         .then(() => res.status(200).send("Healthy"))
         .catch((error: Error) => {
           errorUtils.sendUnknownError(res, error, next);
-          sendErrorToDatadog(error);
+          sendErrorToSignoz(error);
         });
     }
   );
@@ -265,14 +265,14 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
             memcachedManager.setCachedResponse(deploymentKey, url, response, CACHE_TTL_SECONDS).catch((err) => {
               // Log the error, but don't block the request (which is already done).
               console.error("Failed while setting cached response in Memcached:", err);
-              sendErrorToDatadog(err);
+              sendErrorToSignoz(err);
             });
           }
         })
         .then(() => {
           // If there was a cache error, log it (e.g., to Datadog) and optionally throw
           if (cacheError) {
-            sendErrorToDatadog(cacheError);
+            sendErrorToSignoz(cacheError);
             console.error("Memcached cache error:", cacheError);
           }
         })
@@ -324,14 +324,14 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
             redisWithTimeout(
               redisManager.removeDeploymentKeyClientActiveLabel(previousDeploymentKey, clientUniqueId)
             ).catch((err) => {
-              sendErrorToDatadog(err);
+              sendErrorToSignoz(err);
               console.error("Error or timeout on removeDeploymentKeyClientActiveLabel:", err);
             });
           }
         })
         .catch((error: any) => {
           errorUtils.sendUnknownError(res, error, next)
-          sendErrorToDatadog(error);
+          sendErrorToSignoz(error);
         })
     } else {
       if (!clientUniqueId) {
@@ -365,7 +365,7 @@ export function getAcquisitionRouter(config: AcquisitionConfig): express.Router 
         })
         .catch((error: any) => {
           errorUtils.sendUnknownError(res, error, next)
-          sendErrorToDatadog(error);
+          sendErrorToSignoz(error);
         })
     }
   };
