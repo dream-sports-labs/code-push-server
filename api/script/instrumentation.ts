@@ -9,7 +9,7 @@ import { MySQL2Instrumentation } from '@opentelemetry/instrumentation-mysql2';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 
 const sdk = new opentelemetry.NodeSDK({
-  serviceName: 'code-push-server',
+  serviceName: 'dota-server',
   resource: resourceFromAttributes({
     'service.name': 'code-push-server',
     'service.component': 'code-push-server',
