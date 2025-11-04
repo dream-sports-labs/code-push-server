@@ -1,7 +1,7 @@
 {
     "apps": [
       {
-        "name": "dota-server",
+        "name": "code-push-server",
         "script": "./bin/script/server.js",
         "instances": "-2",
         "watch": true,
@@ -9,7 +9,7 @@
         "exec_mode": "cluster",
         "node_args": ["-r", "./bin/script/instrumentation.js"],
         "log_date_format": "DD-MM-YYYY HH:mm Z",
-        "cwd": "/var/www/dota-server/api",
+        "cwd": "/var/www/code-push-server/api",
         "env": {
           "NODE_ENV": "prod"
         }
