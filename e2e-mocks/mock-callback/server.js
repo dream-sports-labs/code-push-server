@@ -65,6 +65,39 @@ app.post('/api/test/reset-releases', (req, res) => {
   res.status(200).json({ success: true, message: 'All releases cleared' });
 });
 
+app.post('/api/test/reset-data', (req, res) => {
+  console.log('🔄 Resetting all data for test isolation...');
+  db.reset();
+  db.initializePreconfiguredData();
+  res.status(200).json({ success: true, message: 'All data reset to initial state' });
+});
+
+app.post('/api/test/reset-empty', (req, res) => {
+  console.log('🔄 Resetting all data to empty state (accounts only, no orgs)...');
+  db.reset();
+  
+  // Create test accounts only (needed for login), but no orgs/apps/deployments
+  const testAccountId = 'test-user';
+  const testAccount = {
+    id: testAccountId,
+    name: 'Test User',
+    email: 'test@example.com',
+    linkedProviders: []
+  };
+  db.addAccount(testAccount);
+  
+  const playwrightAccountId = 'test-user-playwright';
+  const playwrightAccount = {
+    id: playwrightAccountId,
+    name: 'Playwright Test User',
+    email: 'playwright@example.com',
+    linkedProviders: []
+  };
+  db.addAccount(playwrightAccount);
+  
+  res.status(200).json({ success: true, message: 'All data cleared to empty state (accounts only)' });
+});
+
 // Authentication routes
 app.get('/authenticated', authenticationRoutes.getAuthenticated);
 
