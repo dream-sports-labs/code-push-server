@@ -1,0 +1,12 @@
+{
+    "httpRequest": {
+      "method": "GET",
+      "path": "/ping"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": "pong"
+    }
+  }
+  
+  

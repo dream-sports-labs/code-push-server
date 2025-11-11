@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  mockserver:
+    image: mockserver/mockserver:5.12.0
+    restart: always
+    ports:
+      - "1080:1080"
+    environment:
+      MOCKSERVER_LOG_LEVEL: INFO
+      MOCKSERVER_PERSIST_EXPECTATIONS: "true"
+
+  mock-callback:
+    build: ./mock-callback
+    container_name: mock-callback
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+    volumes:
+      - ./packages:/tmp/codepush-packages
+    restart: always

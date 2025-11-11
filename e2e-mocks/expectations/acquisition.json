@@ -1,0 +1,45 @@
+[
+  {
+    "priority": 10,
+    "httpRequest": {
+      "method": "GET",
+      "path": "/v0.1/public/codepush/update_check"
+    },
+    "httpForward": {
+      "scheme": "HTTP",
+      "host": "mock-callback",
+      "port": 3001
+    },
+    "times": { "unlimited": true },
+    "timeToLive": { "unlimited": true }
+  },
+  {
+    "priority": 10,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/v0.1/public/codepush/report_status/deploy"
+    },
+    "httpForward": {
+      "scheme": "HTTP",
+      "host": "mock-callback",
+      "port": 3001
+    },
+    "times": { "unlimited": true },
+    "timeToLive": { "unlimited": true }
+  },
+  {
+    "priority": 10,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/v0.1/public/codepush/report_status/download"
+    },
+    "httpForward": {
+      "scheme": "HTTP",
+      "host": "mock-callback",
+      "port": 3001
+    },
+    "times": { "unlimited": true },
+    "timeToLive": { "unlimited": true }
+  }
+]
+

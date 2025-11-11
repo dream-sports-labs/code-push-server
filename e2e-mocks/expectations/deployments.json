@@ -1,0 +1,58 @@
+[
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/apps/.*/deployments"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "POST",
+      "path": "/apps/.*/deployments"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/apps/.*/deployments/.*"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "DELETE",
+      "path": "/apps/.*/deployments/.*"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "PATCH",
+      "path": "/apps/.*/deployments/.*"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  }
+]
+

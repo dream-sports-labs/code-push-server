@@ -1,0 +1,12 @@
+{
+  "httpRequest": {
+      "method": "POST",
+      "path": "/api/v1/new/apps"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  }
+  

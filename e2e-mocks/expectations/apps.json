@@ -1,0 +1,11 @@
+{
+  "httpRequest": {
+    "path": "/apps"
+  },
+  "httpForward": {
+    "host": "mock-callback",
+    "port": 3001,
+    "scheme": "HTTP"
+  }
+}
+

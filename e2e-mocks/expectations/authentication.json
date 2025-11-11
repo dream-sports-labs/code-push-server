@@ -1,0 +1,14 @@
+[
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/authenticated"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  }
+]
+

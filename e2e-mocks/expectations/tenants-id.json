@@ -1,0 +1,14 @@
+[
+  {
+    "httpRequest": {
+      "method": "DELETE",
+      "path": "/tenants/.*"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  }
+]
+

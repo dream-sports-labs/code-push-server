@@ -1,0 +1,12 @@
+{
+  "httpRequest": {
+    "method": "GET",
+    "path": "/tenants"
+  },
+  "httpForward": {
+    "host": "mock-callback",
+    "port": 3001,
+    "scheme": "HTTP"
+  }
+}
+

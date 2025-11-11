@@ -1,0 +1,80 @@
+[
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/accessKeys"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "POST",
+      "path": "/accessKeys"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/accessKeys/.*"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "PATCH",
+      "path": "/accessKeys/.*"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "DELETE",
+      "path": "/accessKeys/.*"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "DELETE",
+      "path": "/sessions/.*"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/accountByaccessKeyName"
+    },
+    "httpForward": {
+      "host": "mock-callback",
+      "port": 3001,
+      "scheme": "HTTP"
+    }
+  }
+]
+
