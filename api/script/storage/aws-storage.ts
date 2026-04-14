@@ -333,11 +333,11 @@ export class S3Storage implements storage.Storage {
                 ]
             },
             pool: {
-                max: 5,
+                max: 2,
                 min: 1,
-                acquire: 10000,
-                idle: 10000,
-                evict: 15000,
+                acquire: 3000,
+                idle: 30000,
+                evict: 60000,
                 maxUses: 100000 
               }
             });
